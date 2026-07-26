@@ -1,0 +1,1240 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>شجرة قبيلة المدخلي (آل جردي و آل دوم)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Amiri:wght@400;700&family=Tajawal:wght@400;500;700;900&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.8.5/d3.min.js"></script>
+<style>
+  :root{
+    --ink:#1B3B3A;
+    --ink-soft:#2E5453;
+    --parchment:#F7F1E3;
+    --parchment-dark:#EDE3CC;
+    --gold:#B8863B;
+    --gold-light:#D9B876;
+    --rose:#9C4A34;
+    --sage:#5F7A5E;
+    --line:#B9AE93;
+    --card:#FFFCF4;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;height:100%;background:var(--parchment);font-family:'Tajawal',sans-serif;color:var(--ink);overflow:hidden;}
+
+  #bg-pattern{
+    position:fixed;inset:0;z-index:0;opacity:.5;pointer-events:none;
+    background-image:radial-gradient(circle at 1px 1px, var(--line) 1px, transparent 0);
+    background-size:26px 26px;
+  }
+
+  header{
+    position:relative;z-index:5;
+    display:flex;align-items:center;justify-content:space-between;
+    padding:14px 26px;
+    background:linear-gradient(180deg, var(--ink) 0%, var(--ink-soft) 100%);
+    color:var(--parchment);
+    box-shadow:0 2px 10px rgba(0,0,0,.25);
+  }
+  .brand{display:flex;align-items:center;gap:12px;}
+  .seal{
+    width:40px;height:40px;border-radius:50%;
+    border:2px solid var(--gold-light);
+    display:flex;align-items:center;justify-content:center;
+    font-family:'Amiri',serif;font-weight:700;color:var(--gold-light);font-size:18px;
+    background:radial-gradient(circle, rgba(184,134,59,.25), transparent 70%);
+  }
+  .brand h1{font-family:'Amiri',serif;font-weight:700;font-size:19px;margin:0;letter-spacing:.5px;line-height:1.35;}
+  .brand h1 .title-sub{font-size:12px;font-weight:400;color:var(--gold-light);}
+  .brand small{display:block;font-size:12px;color:var(--gold-light);font-weight:400;margin-top:2px;}
+
+  .toolbar{display:flex;align-items:center;gap:10px;}
+  .search-wrap{position:relative;}
+  #search{
+    width:230px;padding:9px 36px 9px 12px;border-radius:20px;border:1px solid var(--gold);
+    background:rgba(255,255,255,.08);color:var(--parchment);font-family:'Tajawal';font-size:14px;outline:none;
+  }
+  #search::placeholder{color:#cfc4a5;}
+  #search:focus{background:rgba(255,255,255,.16);}
+  .search-wrap svg{position:absolute;left:12px;top:50%;transform:translateY(-50%);width:16px;height:16px;opacity:.8;}
+  #suggest{
+    position:absolute;top:calc(100% + 6px);right:0;width:280px;max-height:320px;overflow:auto;
+    background:var(--card);border:1px solid var(--line);border-radius:10px;box-shadow:0 8px 24px rgba(0,0,0,.25);
+    display:none;z-index:50;
+  }
+  #suggest div{padding:9px 14px;font-size:14px;cursor:pointer;border-bottom:1px solid #eee2c6;color:var(--ink);}
+  #suggest div:hover{background:var(--parchment-dark);}
+  #suggest .path{font-size:11px;color:#8a7f63;display:block;margin-top:2px;}
+
+  .btn{
+    background:transparent;border:1px solid var(--gold);color:var(--parchment);
+    padding:8px 14px;border-radius:20px;font-family:'Tajawal';font-size:13px;cursor:pointer;
+    transition:.15s;white-space:nowrap;
+  }
+  .btn:hover{background:var(--gold);color:var(--ink);}
+
+  #stats{
+    position:fixed;top:78px;right:20px;z-index:5;
+    background:var(--card);border:1px solid var(--line);border-radius:12px;
+    padding:12px 16px;font-size:13px;box-shadow:0 4px 14px rgba(0,0,0,.12);min-width:150px;
+  }
+  #stats b{display:block;font-size:22px;font-family:'Amiri',serif;color:var(--ink);}
+  #stats .lbl{color:#7c7256;font-size:12px;}
+  #stats hr{border:none;border-top:1px dashed var(--line);margin:8px 0;}
+
+  #legend{
+    position:fixed;bottom:20px;right:20px;z-index:5;
+    background:var(--card);border:1px solid var(--line);border-radius:12px;
+    padding:12px 16px;font-size:12.5px;box-shadow:0 4px 14px rgba(0,0,0,.12);
+  }
+  #legend .row{display:flex;align-items:center;gap:8px;margin:4px 0;}
+  #legend .dot{width:12px;height:12px;border-radius:50%;flex:0 0 auto;}
+
+  #hint{
+    position:fixed;bottom:20px;left:20px;z-index:5;color:#8a7f63;font-size:12px;
+    background:var(--card);border:1px solid var(--line);border-radius:12px;padding:10px 14px;
+    max-width:230px;line-height:1.7;
+  }
+
+  #canvas-wrap{position:absolute;inset:0;top:64px;z-index:1;}
+  svg{width:100%;height:100%;cursor:grab;}
+  svg:active{cursor:grabbing;}
+
+  .link{fill:none;stroke:#B9AE93;stroke-width:1.4px;}
+  .node circle{stroke-width:2px;cursor:pointer;transition:.15s;}
+  .node circle:hover{filter:brightness(1.1);}
+  .node text{
+    font-family:'Amiri',serif;font-size:13px;fill:var(--ink);cursor:pointer;
+    paint-order:stroke; stroke:var(--parchment); stroke-width:3px; stroke-linejoin:round;
+  }
+  .node.gen1 text{font-size:19px;font-weight:700;fill:var(--gold);}
+  .node .count-badge{font-family:'Tajawal';font-size:9px;fill:#8a7f63;}
+
+  .node.highlight circle{stroke:var(--rose)!important;stroke-width:3.5px;}
+  .node.dim{opacity:.18;}
+  .link.dim{opacity:.12;}
+
+  #tooltip{
+    position:fixed;z-index:100;background:var(--ink);color:var(--parchment);
+    padding:10px 14px;border-radius:10px;font-size:13px;pointer-events:none;display:none;
+    box-shadow:0 6px 18px rgba(0,0,0,.3);max-width:220px;line-height:1.8;
+  }
+  #tooltip b{font-family:'Amiri',serif;font-size:16px;color:var(--gold-light);}
+
+  /* ---- detail panel ---- */
+  #detail-panel{
+    position:fixed;top:64px;bottom:0;left:0;width:300px;z-index:20;
+    background:var(--card);border-left:1px solid var(--line);
+    box-shadow:8px 0 24px rgba(0,0,0,.12);
+    transform:translateX(-100%);transition:transform .25s ease;
+    overflow-y:auto;padding:20px;
+  }
+  #detail-panel.open{transform:translateX(0);}
+  #detail-panel .close-btn{
+    position:absolute;top:12px;left:14px;background:none;border:none;font-size:20px;
+    color:#8a7f63;cursor:pointer;line-height:1;
+  }
+  #detail-panel .avatar-wrap{display:flex;justify-content:center;margin-top:6px;}
+  #detail-panel .avatar{
+    width:84px;height:84px;border-radius:50%;object-fit:cover;
+    border:3px solid var(--gold-light);box-shadow:0 4px 12px rgba(0,0,0,.15);
+  }
+  #detail-panel .avatar-fallback{
+    width:84px;height:84px;border-radius:50%;
+    border:3px solid var(--gold-light);
+    display:flex;align-items:center;justify-content:center;
+    font-family:'Amiri',serif;font-size:30px;color:var(--gold);
+    background:var(--parchment-dark);
+  }
+  #detail-panel h2{font-family:'Amiri',serif;font-size:24px;margin:10px 0 2px;color:var(--ink);text-align:center;}
+  #detail-panel .meta{font-size:12.5px;color:#8a7f63;margin-bottom:16px;text-align:center;}
+  #detail-panel .info-row{
+    display:flex;justify-content:space-between;gap:8px;font-size:13px;padding:6px 2px;
+    border-bottom:1px dashed var(--line);
+  }
+  #detail-panel .info-row .k{color:#8a7f63;flex:0 0 auto;}
+  #detail-panel .info-row .v{color:var(--ink);font-weight:500;text-align:left;}
+  #detail-panel .info-row a{color:var(--ink-soft);text-decoration:none;border-bottom:1px solid var(--gold-light);}
+  #detail-panel .info-row a:hover{color:var(--rose);}
+  #detail-panel .section-lbl{font-size:12px;color:var(--gold);font-weight:700;margin:16px 0 6px;letter-spacing:.3px;}
+  #detail-panel .breadcrumb{font-size:13px;line-height:2;color:var(--ink-soft);}
+  #detail-panel .breadcrumb span{cursor:pointer;text-decoration:underline dotted;}
+  #detail-panel .breadcrumb span:hover{color:var(--rose);}
+  #detail-panel ul{list-style:none;margin:0;padding:0;}
+  #detail-panel li{
+    padding:6px 10px;border-radius:8px;font-size:13.5px;cursor:pointer;margin-bottom:4px;
+    background:var(--parchment-dark);
+  }
+  #detail-panel li:hover{background:var(--gold-light);}
+  #detail-panel .stat-box{
+    display:flex;gap:10px;margin-top:6px;
+  }
+  #detail-panel .stat-box div{
+    flex:1;background:var(--parchment-dark);border-radius:10px;padding:10px;text-align:center;
+  }
+  #detail-panel .stat-box b{display:block;font-family:'Amiri',serif;font-size:20px;}
+  #detail-panel .stat-box span{font-size:11px;color:#8a7f63;}
+  #detail-panel .action-btn{
+    display:block;width:100%;margin-top:10px;padding:9px;border-radius:20px;border:1px solid var(--gold);
+    background:transparent;color:var(--ink);font-family:'Tajawal';font-size:13px;cursor:pointer;text-align:center;
+  }
+  #detail-panel .action-btn:hover{background:var(--gold);color:#fff;}
+  #copy-msg{font-size:11.5px;color:var(--sage);margin-top:6px;display:none;text-align:center;}
+
+  /* ---- stats panel ---- */
+  #stats-panel{
+    position:fixed;top:64px;bottom:0;right:0;width:320px;z-index:20;
+    background:var(--card);border-right:1px solid var(--line);
+    box-shadow:-8px 0 24px rgba(0,0,0,.12);
+    transform:translateX(100%);transition:transform .25s ease;
+    overflow-y:auto;padding:20px;
+  }
+  #stats-panel.open{transform:translateX(0);}
+  #stats-panel .close-btn{
+    position:absolute;top:12px;right:14px;background:none;border:none;font-size:20px;
+    color:#8a7f63;cursor:pointer;line-height:1;
+  }
+  #stats-panel h3{font-family:'Amiri',serif;font-size:20px;margin:4px 0 16px;}
+  #stats-panel .section-lbl{font-size:12px;color:var(--gold);font-weight:700;margin:18px 0 8px;letter-spacing:.3px;}
+  .genbar-row{display:flex;align-items:center;gap:8px;margin-bottom:5px;font-size:12px;}
+  .genbar-row .lbl{width:50px;flex:0 0 auto;color:#8a7f63;}
+  .genbar-row .bar-wrap{flex:1;background:var(--parchment-dark);border-radius:6px;overflow:hidden;height:14px;}
+  .genbar-row .bar{height:100%;background:var(--gold);}
+  .genbar-row .num{width:30px;flex:0 0 auto;text-align:left;color:var(--ink);}
+  .rank-row{display:flex;justify-content:space-between;font-size:13px;padding:5px 8px;border-radius:6px;}
+  .rank-row:nth-child(odd){background:var(--parchment-dark);}
+  .rank-row .n{cursor:pointer;}
+  .rank-row .n:hover{color:var(--rose);}
+
+
+  /* ===================== LOGIN / ROADMAP SCREEN ===================== */
+  #loginScreen{
+    position:fixed; inset:0; overflow-y:auto; -webkit-overflow-scrolling:touch;
+    display:flex; align-items:flex-start; justify-content:center;
+    padding:40px 18px 60px;
+    background-image:radial-gradient(circle at 1px 1px, var(--line) 1px, transparent 0);
+    background-size:26px 26px;
+    background-color:var(--parchment);
+  }
+  .login-wrap{
+    max-width:480px; width:100%; text-align:center;
+  }
+  .login-seal{
+    width:64px;height:64px;border-radius:50%;margin:0 auto 14px;
+    border:2px solid var(--gold);
+    display:flex;align-items:center;justify-content:center;
+    font-family:'Amiri',serif;font-weight:700;color:var(--gold);font-size:26px;
+    background:radial-gradient(circle, rgba(184,134,59,.15), transparent 70%);
+  }
+  .login-wrap h1{font-family:'Amiri',serif;font-size:30px;margin:0 0 4px;color:var(--ink);line-height:1.3;}
+  .login-wrap h1 .title-sub{font-size:18px;font-weight:400;color:var(--gold);}
+  .login-sub{color:#8a7f63;font-size:13px;margin:0 0 30px;}
+
+  .roadmap{
+    background:var(--card); border:1px solid var(--line); border-radius:16px;
+    padding:20px 18px; text-align:right; margin-bottom:26px;
+  }
+  .stage{display:flex;gap:12px;align-items:flex-start;padding:10px 0;position:relative;}
+  .stage:not(:last-child)::after{
+    content:''; position:absolute; right:15px; top:34px; bottom:-6px; width:2px;
+    background:var(--line);
+  }
+  .stage-dot{
+    flex:0 0 auto; width:30px;height:30px;border-radius:50%;
+    display:flex;align-items:center;justify-content:center;
+    font-size:13px;font-weight:700;color:#fff;background:var(--line);
+    z-index:1;
+  }
+  .stage.done .stage-dot{background:var(--sage);}
+  .stage.current .stage-dot{background:var(--gold);box-shadow:0 0 0 4px rgba(184,134,59,.25);}
+  .stage-title{font-size:14px;font-weight:700;color:var(--ink);}
+  .stage.current .stage-title{color:var(--gold);}
+  .stage-status{font-size:11.5px;color:#8a7f63;margin-top:1px;}
+  .stage.current .stage-status{color:var(--gold);font-weight:700;}
+  .stage-credit{font-size:11px;color:#a89e82;margin-top:4px;}
+  .stage-credit ul{margin:4px 0 0; padding-inline-start:18px; color:#8a7f63;}
+  .stage-credit li{margin-bottom:2px;}
+
+  .login-actions{display:flex;gap:10px;justify-content:center;flex-wrap:wrap;margin-bottom:14px;}
+  .login-btn{
+    padding:12px 26px;border-radius:24px;font-family:'Tajawal';font-size:14px;font-weight:700;
+    cursor:pointer;border:1px solid var(--gold);transition:.15s;
+  }
+  .login-btn.guest{background:var(--gold);color:#fff;border-color:var(--gold);}
+  .login-btn.guest:hover{background:var(--ink);border-color:var(--ink);}
+  .login-btn.organizer-toggle{background:transparent;color:var(--ink);}
+  .login-btn.organizer-toggle:hover{border-color:var(--ink);}
+  .login-btn.organizer-submit{width:100%;background:var(--ink);color:#fff;border-color:var(--ink);margin-top:4px;}
+  .login-btn.organizer-submit:hover{background:var(--gold);border-color:var(--gold);}
+
+  .organizer-form{
+    background:var(--card); border:1px solid var(--line); border-radius:16px;
+    padding:18px; max-width:340px; margin:0 auto;
+  }
+  .organizer-form input{
+    width:100%; padding:10px 14px; margin-bottom:10px; border-radius:20px;
+    border:1px solid var(--line); font-family:'Tajawal'; font-size:14px;
+    box-sizing:border-box; text-align:right;
+  }
+  .login-error{color:var(--rose); font-size:12.5px; margin-top:8px; min-height:16px;}
+  .login-note{color:#a89e82; font-size:10.5px; margin-top:10px; line-height:1.6;}
+
+  #orgBadge{
+    font-size:11px; color:var(--gold-light); background:rgba(184,134,59,.15);
+    border:1px solid var(--gold); border-radius:12px; padding:2px 10px; margin-inline-start:8px;
+  }
+
+  @media print{
+    header,#stats,#legend,#hint,#detail-panel,#stats-panel,#tooltip{display:none!important;}
+  }
+
+  /* ---- mobile responsiveness ---- */
+  @media (max-width: 720px){
+    .login-wrap h1{font-size:24px;}
+    .login-wrap h1 .title-sub{font-size:14px;}
+    .roadmap{padding:16px 14px;}
+    .stage-title{font-size:13px;}
+    header{flex-wrap:wrap;gap:10px;padding:10px 14px;}
+    .brand h1{font-size:14.5px;}
+    .brand small{font-size:10px;}
+    .seal{width:32px;height:32px;font-size:14px;}
+    .toolbar{width:100%;flex-wrap:wrap;gap:8px;justify-content:flex-start;}
+    #search{width:150px;}
+    .btn{padding:7px 10px;font-size:12px;}
+    #canvas-wrap{top:104px;}
+
+    #stats{display:none;}
+    #legend{
+      bottom:auto; top:110px; left:8px; right:auto;
+      padding:8px 10px; font-size:11px;
+    }
+    #legend .row{margin:2px 0;}
+    #hint{display:none;}
+
+    #detail-panel, #stats-panel{
+      width:100% !important; max-width:100% !important;
+      top:auto !important; bottom:0 !important; left:0 !important; right:0 !important;
+      height:auto !important; max-height:85vh !important;
+      border-radius:18px 18px 0 0 !important;
+      transform:translateY(100%);
+      box-shadow:0 -8px 24px rgba(0,0,0,.2);
+      padding-top:34px;
+      transition:transform .3s cubic-bezier(.32,.72,0,1);
+    }
+    #detail-panel .close-btn, #stats-panel .close-btn{
+      left:50%; top:6px; transform:translateX(-50%);
+      width:64px; height:22px; border-radius:8px;
+      font-size:0; padding:0; display:flex; align-items:center; justify-content:center;
+    }
+    #detail-panel .close-btn::after, #stats-panel .close-btn::after{
+      content:''; display:block; width:36px; height:5px; border-radius:3px; background:var(--line);
+    }
+  }
+  @media (max-width: 420px){
+    #search{width:110px;}
+    .btn{padding:6px 8px;font-size:11px;}
+  }
+</style>
+</head>
+<body>
+
+<div id="loginScreen">
+  <div class="login-wrap">
+    <div class="login-seal">ع.م</div>
+    <h1>شجرة قبيلة المدخلي<br><span class="title-sub">(آل جردي و آل دوم)</span></h1>
+    <p class="login-sub">مشروع توثيق نسب العائلة الرقمي</p>
+
+    <div class="roadmap">
+      <div class="stage done">
+        <div class="stage-dot">✓</div>
+        <div class="stage-body">
+          <div class="stage-title">١. مرحلة جمع البيانات</div>
+          <div class="stage-status">تمّت · 4/7/2023 – 25/7/2023</div>
+          <div class="stage-credit">
+            القائمون عليها:
+            <ul>
+              <li>يزن محمد يحيى محمد مدخلي</li>
+              <li>محمد يحيى محمد حسين مدخلي</li>
+              <li>معن محمد يحيى محمد مدخلي</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+      <div class="stage done">
+        <div class="stage-dot">✓</div>
+        <div class="stage-body">
+          <div class="stage-title">٢. مرحلة تشذيب البيانات</div>
+          <div class="stage-status">تمّت · 22/7/2026 – 27/7/2026</div>
+          <div class="stage-credit">
+            القائمون عليها:
+            <ul>
+              <li>أُنيس محمد هادي علي مدخلي</li>
+              <li>إياس محمد هادي علي مدخلي</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+      <div class="stage current">
+        <div class="stage-dot">●</div>
+        <div class="stage-body">
+          <div class="stage-title">٣. بناء النموذج المبدئي للشجرة التفاعلية</div>
+          <div class="stage-status">نحن هنا الآن · 10/7/2026 – 15/8/2026</div>
+          <div class="stage-credit">
+            القائم عليها:
+            <ul>
+              <li>أُنيس محمد هادي علي مدخلي</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+      <div class="stage">
+        <div class="stage-dot">٤</div>
+        <div class="stage-body">
+          <div class="stage-title">٤. مرحلة التحقق وتحديد المنظمين</div>
+          <div class="stage-status">قادمة</div>
+        </div>
+      </div>
+      <div class="stage">
+        <div class="stage-dot">٥</div>
+        <div class="stage-body">
+          <div class="stage-title">٥. مرحلة النشر</div>
+          <div class="stage-status">قادمة</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="login-actions">
+      <button class="login-btn guest" id="guestBtn">👤 دخول كزائر</button>
+      <button class="login-btn organizer-toggle" id="organizerToggleBtn">🔑 دخول كمنظم</button>
+    </div>
+
+    <div class="organizer-form" id="organizerForm" style="display:none;">
+      <input type="text" id="orgUsername" placeholder="اسم المستخدم" autocomplete="username">
+      <input type="password" id="orgPassword" placeholder="كلمة المرور" autocomplete="current-password">
+      <button class="login-btn organizer-submit" id="organizerSubmitBtn">دخول</button>
+      <div class="login-error" id="loginError"></div>
+      <div class="login-note">⚠️ هذا حاجز دخول بسيط لتمييز المنظمين داخل العائلة، وليس نظام حماية تقني كامل.</div>
+    </div>
+  </div>
+</div>
+
+
+<div id="appMain" style="display:none;">
+
+<div id="bg-pattern"></div>
+
+<header>
+  <div class="brand">
+    <div class="seal">ع.م</div>
+    <div>
+      <h1>شجرة قبيلة المدخلي<br><span class="title-sub">(آل جردي و آل دوم)</span></h1>
+      <small>نسخة تفاعلية مبدئية — قابلة للتحديث · <span id="buildStamp"></span></small>
+    </div>
+  </div>
+  <div class="toolbar">
+    <div class="search-wrap">
+      <input id="search" type="text" placeholder="ابحث عن اسم..." autocomplete="off">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+      <div id="suggest"></div>
+    </div>
+    <button class="btn" id="expandAll">فتح الكل</button>
+    <button class="btn" id="collapseAll">طي الكل</button>
+    <button class="btn" id="resetView">توسيط</button>
+    <button class="btn" id="statsToggle">📊 إحصائيات</button>
+    <button class="btn" id="exportFullBtn">🖨 تصدير الشجرة كاملة</button>
+    <button class="btn" id="backToLoginBtn">🔙 صفحة التسجيل</button>
+  </div>
+</header>
+
+<div id="canvas-wrap"><svg id="tree-svg"></svg></div>
+
+<div id="stats">
+  <b id="visibleCount">–</b>
+  <div class="lbl">فرد ظاهر حالياً</div>
+  <hr>
+  <b id="totalCount">–</b>
+  <div class="lbl">إجمالي أفراد العائلة</div>
+</div>
+
+<div id="legend">
+  <div class="row"><div class="dot" style="background:#3D7068;"></div> على قيد الحياة / غير محدد</div>
+  <div class="row"><div class="dot" style="background:#9C4A34;"></div> كلالة</div>
+  <div class="row"><div class="dot" style="background:#C9963B;"></div> خلف بنات فقط</div>
+  <div class="row"><div class="dot" style="background:#8B7355;"></div> يحتاج مراجعة (؟)</div>
+</div>
+
+<div id="hint">💡 اضغط على الدائرة لفتح/طي الأبناء · اضغط على الاسم لعرض البطاقة الشخصية · مرّر للتكبير · اسحب للتنقل</div>
+
+<div id="tooltip"></div>
+
+<div id="detail-panel">
+  <button class="close-btn" id="detailClose">✕</button>
+  <div class="avatar-wrap" id="detailAvatarWrap"></div>
+  <div class="meta" id="detailGenId"></div>
+  <h2 id="detailName">–</h2>
+  <div class="meta" id="detailStatus"></div>
+
+  <div class="stat-box">
+    <div><b id="detailChildren">0</b><span>ابن مباشر</span></div>
+    <div><b id="detailDescendants">0</b><span>إجمالي الذرية</span></div>
+  </div>
+
+  <div class="section-lbl">معلومات شخصية</div>
+  <div id="detailInfo"></div>
+
+  <div class="section-lbl">سلسلة النسب (حتى الجد الأول)</div>
+  <div class="breadcrumb" id="detailBreadcrumb"></div>
+
+  <div class="section-lbl" id="siblingsLbl">الإخوة</div>
+  <ul id="detailSiblings"></ul>
+
+  <button class="action-btn" id="copyLinkBtn">🔗 نسخ رابط مباشر لهذا الشخص</button>
+  <div id="copy-msg">تم نسخ الرابط ✓</div>
+  <button class="action-btn" id="exportBranchBtn">🖼 تصدير هذا الفرع كصورة</button>
+</div>
+
+<div id="stats-panel">
+  <button class="close-btn" id="statsClose">✕</button>
+  <h3>إحصائيات العائلة</h3>
+
+  <div class="section-lbl">عدد الأفراد حسب الجيل</div>
+  <div id="genChart"></div>
+
+  <div class="section-lbl">أكثر الأسماء تكراراً</div>
+  <div id="nameRank"></div>
+
+  <div class="section-lbl">أكبر الفروع (حسب إجمالي الذرية)</div>
+  <div id="branchRank"></div>
+</div>
+
+
+</div>
+
+<script>
+// ================= LOGIN / ACCESS GATE =================
+// NOTE: this is a simple family-facing access gate, not real security —
+// anyone viewing this file's source can read the credentials below.
+const ORGANIZER_ACCOUNTS = [
+  { username: 'منظم', password: '2026', displayName: 'منظم مؤقت' },
+];
+
+let currentUser = { role: 'guest', name: null };
+
+function enterApp(){
+  document.getElementById('loginScreen').style.display = 'none';
+  document.getElementById('appMain').style.display = 'block';
+  if(currentUser.role === 'organizer'){
+    const brand = document.querySelector('.brand > div');
+    if(brand){
+      const badge = document.createElement('span');
+      badge.id = 'orgBadge';
+      badge.textContent = '🔑 ' + currentUser.name;
+      brand.appendChild(badge);
+    }
+  }
+  setTimeout(()=>{ centerView(); checkUrlParam(); }, 60);
+}
+
+document.getElementById('backToLoginBtn').onclick = ()=>{
+  document.getElementById('appMain').style.display = 'none';
+  document.getElementById('loginScreen').style.display = 'flex';
+  const badge = document.getElementById('orgBadge');
+  if(badge) badge.remove();
+  document.getElementById('organizerForm').style.display = 'none';
+  document.getElementById('orgUsername').value = '';
+  document.getElementById('orgPassword').value = '';
+  document.getElementById('loginError').textContent = '';
+  currentUser = { role: 'guest', name: null };
+};
+
+document.getElementById('guestBtn').onclick = ()=>{
+  currentUser = { role: 'guest', name: null };
+  enterApp();
+};
+
+document.getElementById('organizerToggleBtn').onclick = ()=>{
+  const form = document.getElementById('organizerForm');
+  form.style.display = form.style.display === 'none' ? 'block' : 'none';
+};
+
+document.getElementById('organizerSubmitBtn').onclick = ()=>{
+  const u = document.getElementById('orgUsername').value.trim();
+  const p = document.getElementById('orgPassword').value;
+  const match = ORGANIZER_ACCOUNTS.find(a => a.username === u && a.password === p);
+  const errEl = document.getElementById('loginError');
+  if(match){
+    currentUser = { role: 'organizer', name: match.displayName };
+    errEl.textContent = '';
+    enterApp();
+  } else {
+    errEl.textContent = 'اسم المستخدم أو كلمة المرور غير صحيحة';
+  }
+};
+document.getElementById('orgPassword').addEventListener('keydown', (e)=>{
+  if(e.key === 'Enter') document.getElementById('organizerSubmitBtn').click();
+});
+
+const rawData = {"id": 1, "name": "عمر المدخلي", "gen": 1, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null, "children": [{"id": 2, "name": "حسين", "gen": 2, "status": "خلف بنات فقط", "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null}, {"id": 3, "name": "أحمد", "gen": 2, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null, "children": [{"id": 5, "name": "حسين جردي", "gen": 3, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null, "children": [{"id": 7, "name": "عمر", "gen": 4, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null, "children": [{"id": 12, "name": "حسين", "gen": 5, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null, "children": [{"id": 21, "name": "هادي", "gen": 6, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null, "children": [{"id": 43, "name": "علي", "gen": 7, "status": "كلالة", "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null}, {"id": 44, "name": "حمد", "gen": 7, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null, "children": [{"id": 88, "name": "هادي", "gen": 8, "status": "خلف بنات فقط", "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null}, {"id": 89, "name": "علي", "gen": 8, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null, "children": [{"id": 202, "name": "هادي", "gen": 9, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null, "children": [{"id": 528, "name": "عبدالمجيد", "gen": 10, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null}, {"id": 529, "name": "علي", "gen": 10, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null}, {"id": 530, "name": "عبدالله", "gen": 10, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null, "children": [{"id": 770, "name": "معاوية", "gen": 11, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null}]}, {"id": 531, "name": "محمد", "gen": 10, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null}]}, {"id": 203, "name": "حسن", "gen": 9, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null, "children": [{"id": 532, "name": "علي", "gen": 10, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null}, {"id": 533, "name": "عبدالعزيز", "gen": 10, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null}]}, {"id": 204, "name": "محمد", "gen": 9, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null, "children": [{"id": 534, "name": "أحمد", "gen": 10, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null}]}, {"id": 205, "name": "عبده", "gen": 9, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null, "children": [{"id": 535, "name": "أيهم", "gen": 10, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null}]}, {"id": 206, "name": "عمار", "gen": 9, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null, "children": [{"id": 536, "name": "هيثم", "gen": 10, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null}, {"id": 537, "name": "غسان", "gen": 10, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null}]}, {"id": 207, "name": "عبداللطيف", "gen": 9, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null}]}]}, {"id": 45, "name": "حسن", "gen": 7, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null, "children": [{"id": 90, "name": "هادي", "gen": 8, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null, "children": [{"id": 208, "name": "أمجد", "gen": 9, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null, "children": [{"id": 538, "name": "هادي", "gen": 10, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null}, {"id": 539, "name": "سيف", "gen": 10, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null}]}, {"id": 209, "name": "عبداللطيف", "gen": 9, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null}]}, {"id": 91, "name": "أحمد", "gen": 8, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null}, {"id": 92, "name": "عبدالله", "gen": 8, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null, "children": [{"id": 210, "name": "حسن", "gen": 9, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null, "children": [{"id": 540, "name": "رئيف", "gen": 10, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null}]}, {"id": 211, "name": "حسان", "gen": 9, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null}, {"id": 212, "name": "حاتم", "gen": 9, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null}, {"id": 213, "name": "أيمن", "gen": 9, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null}, {"id": 214, "name": "ميمون", "gen": 9, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null}]}, {"id": 93, "name": "يحيى", "gen": 8, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null, "children": [{"id": 215, "name": "عبدالرحمن", "gen": 9, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null}]}, {"id": 94, "name": "محمد", "gen": 8, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null, "children": [{"id": 216, "name": "عبدالعزيز", "gen": 9, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null}, {"id": 217, "name": "عبدالإله", "gen": 9, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null}, {"id": 218, "name": "عبدالملك", "gen": 9, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null}, {"id": 219, "name": "خالد", "gen": 9, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null}, {"id": 220, "name": "مهدي", "gen": 9, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null}, {"id": 221, "name": "عبدالرؤوف", "gen": 9, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null}]}, {"id": 95, "name": "علي", "gen": 8, "status": "كلالة", "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null}, {"id": 96, "name": "تركي", "gen": 8, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null, "children": [{"id": 222, "name": "غيث", "gen": 9, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null}]}, {"id": 97, "name": "يعقوب", "gen": 8, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null, "children": [{"id": 223, "name": "ناصر", "gen": 9, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null}]}, {"id": 98, "name": "مجدي", "gen": 8, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null, "children": [{"id": 224, "name": "عبدالرحمن", "gen": 9, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null}, {"id": 225, "name": "عبدالله", "gen": 9, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null}, {"id": 226, "name": "سليمان", "gen": 9, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null}, {"id": 227, "name": "فارس", "gen": 9, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null}]}]}]}, {"id": 22, "name": "حمد", "gen": 6, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null, "children": [{"id": 46, "name": "علي", "gen": 7, "status": "كلالة", "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null}, {"id": 47, "name": "هادي", "gen": 7, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null, "children": [{"id": 99, "name": "محمد", "gen": 8, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null, "children": [{"id": 228, "name": "خالد", "gen": 9, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null, "children": [{"id": 541, "name": "محمد", "gen": 10, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null}]}, {"id": 229, "name": "علي", "gen": 9, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null}, {"id": 230, "name": "عبدالعزيز", "gen": 9, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null}]}]}, {"id": 48, "name": "محمد", "gen": 7, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null, "children": [{"id": 100, "name": "هادي", "gen": 8, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null, "children": [{"id": 231, "name": "محمد", "gen": 9, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null}, {"id": 232, "name": "إسحاق", "gen": 9, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null, "children": [{"id": 542, "name": "إياس", "gen": 10, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null}]}, {"id": 233, "name": "بندر", "gen": 9, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null, "children": [{"id": 543, "name": "مناف", "gen": 10, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null}, {"id": 544, "name": "منيف", "gen": 10, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null}, {"id": 545, "name": "صهيب", "gen": 10, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null}]}, {"id": 234, "name": "مؤيد", "gen": 9, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null, "children": [{"id": 546, "name": "مياس", "gen": 10, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null}]}, {"id": 235, "name": "عاصم", "gen": 9, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null}]}, {"id": 101, "name": "محمد (كنتوح)", "gen": 8, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null, "children": [{"id": 236, "name": "إسماعيل", "gen": 9, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null, "children": [{"id": 547, "name": "عبدالرحمن", "gen": 10, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null}, {"id": 548, "name": "عبدالرحيم", "gen": 10, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null}, {"id": 549, "name": "عبداللطيف", "gen": 10, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null}, {"id": 550, "name": "عبدالمجيد", "gen": 10, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null}]}, {"id": 237, "name": "هادي", "gen": 9, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null, "children": [{"id": 551, "name": "مهند", "gen": 10, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null}, {"id": 552, "name": "أحمد", "gen": 10, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null}, {"id": 553, "name": "ماجد", "gen": 10, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null}, {"id": 554, "name": "مشاري", "gen": 10, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null}]}, {"id": 238, "name": "عبدالرحمن", "gen": 9, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null, "children": [{"id": 555, "name": "فراس", "gen": 10, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null}, {"id": 556, "name": "فارس", "gen": 10, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null}, {"id": 557, "name": "حازم", "gen": 10, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null}, {"id": 558, "name": "عزام", "gen": 10, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null}]}, {"id": 239, "name": "عبدالإله", "gen": 9, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null}, {"id": 240, "name": "ماجد", "gen": 9, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null}]}, {"id": 102, "name": "حسين", "gen": 8, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null, "children": [{"id": 241, "name": "محمد", "gen": 9, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null}, {"id": 242, "name": "عمر", "gen": 9, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null}, {"id": 243, "name": "أحمد", "gen": 9, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null}, {"id": 244, "name": "ميمون", "gen": 9, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null}]}, {"id": 103, "name": "علي", "gen": 8, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null, "children": [{"id": 245, "name": "حمد", "gen": 9, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null, "children": [{"id": 559, "name": "علي", "gen": 10, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null}]}, {"id": 246, "name": "عاطف", "gen": 9, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null}]}, {"id": 104, "name": "حمد", "gen": 8, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null, "children": [{"id": 247, "name": "وسام", "gen": 9, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null, "children": [{"id": 560, "name": "سند", "gen": 10, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null}]}, {"id": 248, "name": "وسيم", "gen": 9, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null}]}, {"id": 105, "name": "عمر", "gen": 8, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null, "children": [{"id": 249, "name": "إلياس", "gen": 9, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null}]}, {"id": 106, "name": "أيمن", "gen": 8, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null, "children": [{"id": 250, "name": "عبدالرحمن", "gen": 9, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null}]}, {"id": 107, "name": "ميمون", "gen": 8, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null}, {"id": 108, "name": "عبدالرحمن", "gen": 8, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null, "children": [{"id": 251, "name": "العز", "gen": 9, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null}]}]}, {"id": 49, "name": "علي", "gen": 7, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null, "children": [{"id": 109, "name": "خالد", "gen": 8, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null, "children": [{"id": 252, "name": "إيهاب", "gen": 9, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null}, {"id": 253, "name": "أصيل", "gen": 9, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null}, {"id": 254, "name": "البراء", "gen": 9, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null}, {"id": 255, "name": "نبيل", "gen": 9, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null}]}, {"id": 110, "name": "عبدالله", "gen": 8, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null}, {"id": 111, "name": "محمد", "gen": 8, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null, "children": [{"id": 256, "name": "باسم", "gen": 9, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null}, {"id": 257, "name": "علي", "gen": 9, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null}]}, {"id": 112, "name": "باسم", "gen": 8, "status": "كلالة", "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null}]}]}, {"id": 23, "name": "محمد", "gen": 6, "status": "خلف بنات فقط", "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null}]}]}, {"id": 8, "name": "محمد", "gen": 4, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null, "children": [{"id": 13, "name": "حسين", "gen": 5, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null, "children": [{"id": 24, "name": "هادي", "gen": 6, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null, "children": [{"id": 50, "name": "يحيى", "gen": 7, "status": "كلالة", "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null}, {"id": 51, "name": "ياسين", "gen": 7, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null, "children": [{"id": 113, "name": "خالد", "gen": 8, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null}, {"id": 114, "name": "وليد", "gen": 8, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null}, {"id": 115, "name": "سعود", "gen": 8, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null}]}, {"id": 52, "name": "أحمد", "gen": 7, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null, "children": [{"id": 116, "name": "هادي", "gen": 8, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null, "children": [{"id": 258, "name": "رعد", "gen": 9, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null, "children": [{"id": 561, "name": "أحمد", "gen": 10, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null}, {"id": 562, "name": "بدر", "gen": 10, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null}, {"id": 563, "name": "رياض", "gen": 10, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null}]}, {"id": 259, "name": "محمد", "gen": 9, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null}, {"id": 260, "name": "مروان", "gen": 9, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null}, {"id": 261, "name": "زهير", "gen": 9, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null}, {"id": 262, "name": "رياض", "gen": 9, "status": "كلالة", "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null}]}, {"id": 117, "name": "عبدالله", "gen": 8, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null, "children": [{"id": 263, "name": "عماد", "gen": 9, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null}, {"id": 264, "name": "عبدالحميد", "gen": 9, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null}, {"id": 265, "name": "حاتم", "gen": 9, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null}, {"id": 266, "name": "رياض", "gen": 9, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null}]}, {"id": 118, "name": "محمد", "gen": 8, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null, "children": [{"id": 267, "name": "أحمد", "gen": 9, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null}, {"id": 268, "name": "أيمن", "gen": 9, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null}]}, {"id": 119, "name": "عبدالحميد", "gen": 8, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null, "children": [{"id": 269, "name": "محمد", "gen": 9, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null}, {"id": 270, "name": "عبدالله", "gen": 9, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null}, {"id": 271, "name": "عبدالملك", "gen": 9, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null}]}]}]}]}, {"id": 14, "name": "هادي", "gen": 5, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null, "children": [{"id": 25, "name": "حسين (معرج)", "gen": 6, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null, "children": [{"id": 53, "name": "محمد", "gen": 7, "status": "كلالة", "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null}, {"id": 54, "name": "علي", "gen": 7, "status": "كلالة", "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null}]}, {"id": 26, "name": "محمد (مذيب)", "gen": 6, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null, "children": [{"id": 55, "name": "جابر", "gen": 7, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null, "children": [{"id": 120, "name": "أحمد", "gen": 8, "status": "كلالة", "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null}]}, {"id": 56, "name": "محمد (مسود)", "gen": 7, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null, "children": [{"id": 121, "name": "جابر", "gen": 8, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null, "children": [{"id": 272, "name": "عبدالباسط", "gen": 9, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null, "children": [{"id": 564, "name": "غسان", "gen": 10, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null, "children": [{"id": 771, "name": "سلطان", "gen": 11, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null}]}]}, {"id": 273, "name": "تركي", "gen": 9, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null, "children": [{"id": 565, "name": "عبدالرحمن", "gen": 10, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null}, {"id": 566, "name": "عبدالعزيز", "gen": 10, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null}]}]}, {"id": 122, "name": "عبدالله (عواجي)", "gen": 8, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null, "children": [{"id": 274, "name": "جابر", "gen": 9, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null, "children": [{"id": 567, "name": "فهد", "gen": 10, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null, "children": [{"id": 772, "name": "خالد", "gen": 11, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null}, {"id": 773, "name": "عز", "gen": 11, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null}]}, {"id": 568, "name": "أمين", "gen": 10, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null}, {"id": 569, "name": "فراس", "gen": 10, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null}]}, {"id": 275, "name": "فهد", "gen": 9, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null, "children": [{"id": 570, "name": "عبدالله", "gen": 10, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null}, {"id": 571, "name": "عدنان", "gen": 10, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null}]}, {"id": 276, "name": "يوسف", "gen": 9, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null, "children": [{"id": 572, "name": "شادي", "gen": 10, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null}, {"id": 573, "name": "أحمد", "gen": 10, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null}]}, {"id": 277, "name": "أحمد", "gen": 9, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null, "children": [{"id": 574, "name": "عبدالله", "gen": 10, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null}, {"id": 575, "name": "عبدالعزيز", "gen": 10, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null}]}, {"id": 278, "name": "محمد", "gen": 9, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null, "children": [{"id": 576, "name": "يامن", "gen": 10, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null}]}]}]}]}]}]}, {"id": 9, "name": "أحمد", "gen": 4, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null, "children": [{"id": 15, "name": "هادي", "gen": 5, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null, "children": [{"id": 27, "name": "عبده", "gen": 6, "status": "كلالة", "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null}, {"id": 28, "name": "محمد", "gen": 6, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null, "children": [{"id": 57, "name": "محمد (معمس)", "gen": 7, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null, "children": [{"id": 123, "name": "عيسى", "gen": 8, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null, "children": [{"id": 279, "name": "محمد", "gen": 9, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null, "children": [{"id": 577, "name": "أويس", "gen": 10, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null}]}, {"id": 280, "name": "ماجد", "gen": 9, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null, "children": [{"id": 578, "name": "الأيهم", "gen": 10, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null}]}, {"id": 281, "name": "بندر", "gen": 9, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null, "children": [{"id": 579, "name": "حازم", "gen": 10, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null}, {"id": 580, "name": "عبدالرحمن", "gen": 10, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null}, {"id": 581, "name": "فيصل", "gen": 10, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null}, {"id": 582, "name": "عبدالعزيز", "gen": 10, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null}, {"id": 583, "name": "تركي", "gen": 10, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null}]}, {"id": 282, "name": "سلطان", "gen": 9, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null, "children": [{"id": 584, "name": "تركي", "gen": 10, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null}, {"id": 585, "name": "آسر", "gen": 10, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null}, {"id": 586, "name": "فهد", "gen": 10, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null}]}, {"id": 283, "name": "تركي", "gen": 9, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null}, {"id": 284, "name": "نايف", "gen": 9, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null}, {"id": 285, "name": "عصام", "gen": 9, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null}, {"id": 286, "name": "عماد", "gen": 9, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null}]}]}, {"id": 58, "name": "هادي", "gen": 7, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null, "children": [{"id": 124, "name": "محمد (خيري)", "gen": 8, "status": "كلالة", "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null}, {"id": 125, "name": "جابر", "gen": 8, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null, "children": [{"id": 287, "name": "عبده", "gen": 9, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null, "children": [{"id": 587, "name": "أحمد", "gen": 10, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null, "children": [{"id": 774, "name": "عبدالإله", "gen": 11, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null}, {"id": 775, "name": "عبدالعزيز", "gen": 11, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null}]}, {"id": 588, "name": "أيمن", "gen": 10, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null}]}, {"id": 288, "name": "عيسى", "gen": 9, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null, "children": [{"id": 589, "name": "تيسير", "gen": 10, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null, "children": [{"id": 776, "name": "باسم", "gen": 11, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null}]}, {"id": 590, "name": "ياسر", "gen": 10, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null}, {"id": 591, "name": "حسام", "gen": 10, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null}, {"id": 592, "name": "باسم", "gen": 10, "status": "كلالة", "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null}]}]}, {"id": 126, "name": "هادي", "gen": 8, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null, "children": [{"id": 289, "name": "فيصل", "gen": 9, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null, "children": [{"id": 593, "name": "خالد", "gen": 10, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null}, {"id": 594, "name": "نواف", "gen": 10, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null}, {"id": 595, "name": "سعود", "gen": 10, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null}]}, {"id": 290, "name": "نايف", "gen": 9, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null, "children": [{"id": 596, "name": "عبدالعزيز", "gen": 10, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null}]}, {"id": 291, "name": "علي", "gen": 9, "status": "خلف بنات فقط", "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null}]}, {"id": 127, "name": "علي", "gen": 8, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null, "children": [{"id": 292, "name": "علي", "gen": 9, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null, "children": [{"id": 597, "name": "عبدالمؤمن", "gen": 10, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null, "children": [{"id": 777, "name": "سهيل", "gen": 11, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null}, {"id": 778, "name": "أحمد", "gen": 11, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null}, {"id": 779, "name": "محمد", "gen": 11, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null}]}, {"id": 598, "name": "عبدالوهاب", "gen": 10, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null, "children": [{"id": 780, "name": "مازن", "gen": 11, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null}, {"id": 781, "name": "محمد", "gen": 11, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null}, {"id": 782, "name": "عبدالعزيز", "gen": 11, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null}, {"id": 783, "name": "وليد", "gen": 11, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null}, {"id": 784, "name": "علي", "gen": 11, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null}]}, {"id": 599, "name": "هادي", "gen": 10, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null}, {"id": 600, "name": "عادل", "gen": 10, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null}, {"id": 601, "name": "فواز", "gen": 10, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null, "children": [{"id": 785, "name": "علي", "gen": 11, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null}, {"id": 786, "name": "زيد", "gen": 11, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null}, {"id": 787, "name": "سلمان", "gen": 11, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null}, {"id": 788, "name": "عبدالعزيز", "gen": 11, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null}]}, {"id": 602, "name": "عبدالمجيد", "gen": 10, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null, "children": [{"id": 789, "name": "نواف", "gen": 11, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null}]}, {"id": 603, "name": "عبدالقادر", "gen": 10, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null}]}, {"id": 293, "name": "أحمد", "gen": 9, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null, "children": [{"id": 604, "name": "صفوان", "gen": 10, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null}]}]}, {"id": 128, "name": "صالح", "gen": 8, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null, "children": [{"id": 294, "name": "هادي", "gen": 9, "status": "خلف بنات فقط", "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null}, {"id": 295, "name": "علي", "gen": 9, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null, "children": [{"id": 605, "name": "الحسن", "gen": 10, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null, "children": [{"id": 790, "name": "علي", "gen": 11, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null}]}, {"id": 606, "name": "الحسين", "gen": 10, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null, "children": [{"id": 791, "name": "الوليد", "gen": 11, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null}, {"id": 792, "name": "عبدالله", "gen": 11, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null}, {"id": 793, "name": "عبدالرحمن", "gen": 11, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null}]}, {"id": 607, "name": "أنور", "gen": 10, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null}]}, {"id": 296, "name": "محمد", "gen": 9, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null, "children": [{"id": 608, "name": "فيصل", "gen": 10, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null, "children": [{"id": 794, "name": "محمد", "gen": 11, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null}]}, {"id": 609, "name": "صالح", "gen": 10, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null}, {"id": 610, "name": "عبدالهادي", "gen": 10, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null}, {"id": 611, "name": "عبدالله", "gen": 10, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null}]}, {"id": 297, "name": "أحمد", "gen": 9, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null}, {"id": 298, "name": "عبدالله", "gen": 9, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null, "children": [{"id": 612, "name": "عبدالرحمن", "gen": 10, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null}, {"id": 613, "name": "عبدالعزيز", "gen": 10, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null}]}, {"id": 299, "name": "عمر", "gen": 9, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null}]}]}]}, {"id": 29, "name": "جابر", "gen": 6, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null, "children": [{"id": 59, "name": "محمد", "gen": 7, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null, "children": [{"id": 129, "name": "عبده", "gen": 8, "status": "كلالة", "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null}, {"id": 130, "name": "محمد", "gen": 8, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null, "children": [{"id": 300, "name": "أحمد", "gen": 9, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null, "children": [{"id": 614, "name": "عبدالرحمن", "gen": 10, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null}, {"id": 615, "name": "محمد", "gen": 10, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null}, {"id": 616, "name": "مثنى", "gen": 10, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null}]}, {"id": 301, "name": "عبدالهادي", "gen": 9, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null, "children": [{"id": 617, "name": "عبدالله", "gen": 10, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null, "children": [{"id": 795, "name": "عبدالرحمن", "gen": 11, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null}, {"id": 796, "name": "عبدالشكور", "gen": 11, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null}]}, {"id": 618, "name": "عبدالرحمن", "gen": 10, "status": "كلالة", "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null}]}, {"id": 302, "name": "عبدالحميد", "gen": 9, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null, "children": [{"id": 619, "name": "عبدالعزيز", "gen": 10, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null}, {"id": 620, "name": "محمد", "gen": 10, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null}, {"id": 621, "name": "أحمد", "gen": 10, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null}, {"id": 622, "name": "عبدالمحسن", "gen": 10, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null}]}, {"id": 303, "name": "عبدالرحيم", "gen": 9, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null, "children": [{"id": 623, "name": "فيصل", "gen": 10, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null}, {"id": 624, "name": "محمد", "gen": 10, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null}, {"id": 625, "name": "رائد", "gen": 10, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null}, {"id": 626, "name": "أديب", "gen": 10, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null}]}, {"id": 304, "name": "عبدالوهاب", "gen": 9, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null, "children": [{"id": 627, "name": "محمد", "gen": 10, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null}, {"id": 628, "name": "الوليد", "gen": 10, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null}, {"id": 629, "name": "اليزيد", "gen": 10, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null}, {"id": 630, "name": "أحمد", "gen": 10, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null}]}, {"id": 305, "name": "عبدالرزاق", "gen": 9, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null, "children": [{"id": 631, "name": "محمد", "gen": 10, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null}, {"id": 632, "name": "عبدالله", "gen": 10, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null}, {"id": 633, "name": "نواف", "gen": 10, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null}, {"id": 634, "name": "فهد", "gen": 10, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null}]}, {"id": 306, "name": "عبدالرحمن", "gen": 9, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null}, {"id": 307, "name": "عبدالسلام", "gen": 9, "status": "كلالة", "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null}]}, {"id": 131, "name": "أحمد (القاضي)", "gen": 8, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null, "children": [{"id": 308, "name": "محمد", "gen": 9, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null, "children": [{"id": 635, "name": "سعود", "gen": 10, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null}, {"id": 636, "name": "رائف", "gen": 10, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null}, {"id": 637, "name": "زياد", "gen": 10, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null, "children": [{"id": 797, "name": "زهير", "gen": 11, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null}]}, {"id": 638, "name": "زهير", "gen": 10, "status": "كلالة", "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null}, {"id": 639, "name": "رائد", "gen": 10, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null}, {"id": 640, "name": "هيثم", "gen": 10, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null}]}, {"id": 309, "name": "عبدالعزيز", "gen": 9, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null, "children": [{"id": 641, "name": "سعود", "gen": 10, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null}, {"id": 642, "name": "سلطان", "gen": 10, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null}]}, {"id": 310, "name": "عبدالمنعم", "gen": 9, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null, "children": [{"id": 643, "name": "فيصل", "gen": 10, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null}, {"id": 644, "name": "تركي", "gen": 10, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null}, {"id": 645, "name": "أحمد", "gen": 10, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null}]}, {"id": 311, "name": "عبدالوهاب", "gen": 9, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null, "children": [{"id": 646, "name": "أحمد", "gen": 10, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null}]}, {"id": 312, "name": "نواف", "gen": 9, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null, "children": [{"id": 647, "name": "عبدالوهاب", "gen": 10, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null}]}, {"id": 313, "name": "عبدالله", "gen": 9, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null, "children": [{"id": 648, "name": "أحمد", "gen": 10, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null}]}, {"id": 314, "name": "عبدالرحمن", "gen": 9, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null}, {"id": 315, "name": "سعود", "gen": 9, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null}]}, {"id": 132, "name": "عبدالكريم", "gen": 8, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null, "children": [{"id": 316, "name": "تميم", "gen": 9, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null}, {"id": 317, "name": "محمد", "gen": 9, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null, "children": [{"id": 649, "name": "عبدالكريم", "gen": 10, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null}]}, {"id": 318, "name": "أديب", "gen": 9, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null}]}, {"id": 133, "name": "أحمد (صغير)", "gen": 8, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null, "children": [{"id": 319, "name": "عبدالحميد", "gen": 9, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null}, {"id": 320, "name": "محمد", "gen": 9, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null}]}]}, {"id": 60, "name": "عبده", "gen": 7, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null, "children": [{"id": 134, "name": "محمد", "gen": 8, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null, "children": [{"id": 321, "name": "محمود", "gen": 9, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null, "children": [{"id": 650, "name": "مهند", "gen": 10, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null}, {"id": 651, "name": "محمد", "gen": 10, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null}, {"id": 652, "name": "معتز", "gen": 10, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null}]}, {"id": 322, "name": "حسام", "gen": 9, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null, "children": [{"id": 653, "name": "سلطان", "gen": 10, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null}]}, {"id": 323, "name": "خالد", "gen": 9, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null, "children": [{"id": 654, "name": "طلال", "gen": 10, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null}]}, {"id": 324, "name": "طارق", "gen": 9, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null}, {"id": 325, "name": "عبدالسلام", "gen": 9, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null}]}, {"id": 135, "name": "أحمد", "gen": 8, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null, "children": [{"id": 326, "name": "عبدالحميد", "gen": 9, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null}, {"id": 327, "name": "خليل", "gen": 9, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null, "children": [{"id": 655, "name": "أحمد", "gen": 10, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null}]}, {"id": 328, "name": "عدي", "gen": 9, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null}, {"id": 329, "name": "سعود", "gen": 9, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null}, {"id": 330, "name": "الليث", "gen": 9, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null}, {"id": 331, "name": "هزبر", "gen": 9, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null}]}]}]}, {"id": 30, "name": "حسين", "gen": 6, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null, "children": [{"id": 61, "name": "أحمد", "gen": 7, "status": "كلالة", "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null}, {"id": 62, "name": "عبده", "gen": 7, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null, "children": [{"id": 136, "name": "عبده", "gen": 8, "status": "كلالة", "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null}]}, {"id": 63, "name": "محمد (عكيس)", "gen": 7, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null, "children": [{"id": 137, "name": "إسماعيل", "gen": 8, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null, "children": [{"id": 332, "name": "محمد", "gen": 9, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null, "children": [{"id": 656, "name": "رائد", "gen": 10, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null, "children": [{"id": 798, "name": "جياد", "gen": 11, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null}, {"id": 799, "name": "هتان", "gen": 11, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null}]}, {"id": 657, "name": "إسماعيل", "gen": 10, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null, "children": [{"id": 800, "name": "فهد", "gen": 11, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null}]}, {"id": 658, "name": "عبدالرحمن", "gen": 10, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null}, {"id": 659, "name": "مصعب", "gen": 10, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null}]}, {"id": 333, "name": "عبدالرحمن", "gen": 9, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null, "children": [{"id": 660, "name": "فيصل", "gen": 10, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null}, {"id": 661, "name": "عبدالعزيز", "gen": 10, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null}, {"id": 662, "name": "عبدالله", "gen": 10, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null}]}, {"id": 334, "name": "إبراهيم", "gen": 9, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null, "children": [{"id": 663, "name": "حسام", "gen": 10, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null, "children": [{"id": 801, "name": "غيث", "gen": 11, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null}]}, {"id": 664, "name": "أحمد", "gen": 10, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null}]}, {"id": 335, "name": "عبداللطيف", "gen": 9, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null, "children": [{"id": 665, "name": "أحمد", "gen": 10, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null}]}, {"id": 336, "name": "علي", "gen": 9, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null, "children": [{"id": 666, "name": "يحيى", "gen": 10, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null}]}, {"id": 337, "name": "أحمد", "gen": 9, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null, "children": [{"id": 667, "name": "إسماعيل", "gen": 10, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null}, {"id": 668, "name": "معاذ", "gen": 10, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null}]}, {"id": 338, "name": "خالد", "gen": 9, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null, "children": [{"id": 669, "name": "عبدالكريم", "gen": 10, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null}, {"id": 670, "name": "فارس", "gen": 10, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null}]}, {"id": 339, "name": "عبدالله", "gen": 9, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null, "children": [{"id": 671, "name": "مؤيد", "gen": 10, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null}, {"id": 672, "name": "المنذر", "gen": 10, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null}]}, {"id": 340, "name": "عبدالعزيز", "gen": 9, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null}, {"id": 341, "name": "يحيى", "gen": 9, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null}, {"id": 342, "name": "عبدالكريم", "gen": 9, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null, "children": [{"id": 673, "name": "أسامة", "gen": 10, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null}]}, {"id": 343, "name": "عمر", "gen": 9, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null, "children": [{"id": 674, "name": "تركي", "gen": 10, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null}, {"id": 675, "name": "راشد", "gen": 10, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null}, {"id": 676, "name": "مازن", "gen": 10, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null}]}, {"id": 344, "name": "فيصل", "gen": 9, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null, "children": [{"id": 677, "name": "البراء", "gen": 10, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null}, {"id": 678, "name": "أحمد", "gen": 10, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null}]}, {"id": 345, "name": "ناصر", "gen": 9, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null, "children": [{"id": 679, "name": "أنس", "gen": 10, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null}]}, {"id": 346, "name": "فارس", "gen": 9, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null, "children": [{"id": 680, "name": "بدر", "gen": 10, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null}]}]}, {"id": 138, "name": "محمد", "gen": 8, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null, "children": [{"id": 347, "name": "علي", "gen": 9, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null, "children": [{"id": 681, "name": "محمد", "gen": 10, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null}, {"id": 682, "name": "معاذ", "gen": 10, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null}, {"id": 683, "name": "عبدالله", "gen": 10, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null}, {"id": 684, "name": "عبدالملك", "gen": 10, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null}]}]}]}, {"id": 64, "name": "علي", "gen": 7, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null, "children": [{"id": 139, "name": "محمد", "gen": 8, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null, "children": [{"id": 348, "name": "علي", "gen": 9, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null}, {"id": 349, "name": "لؤي", "gen": 9, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null, "children": [{"id": 685, "name": "طارق", "gen": 10, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null}, {"id": 686, "name": "محمد", "gen": 10, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null}]}, {"id": 350, "name": "حسن", "gen": 9, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null, "children": [{"id": 687, "name": "محمد", "gen": 10, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null}]}, {"id": 351, "name": "الزبير", "gen": 9, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null, "children": [{"id": 688, "name": "محمد", "gen": 10, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null}, {"id": 689, "name": "سهم", "gen": 10, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null}]}, {"id": 352, "name": "عمران", "gen": 9, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null}, {"id": 353, "name": "أحمد", "gen": 9, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null}, {"id": 354, "name": "عبدالودود", "gen": 9, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null}, {"id": 355, "name": "عبدالرقيب", "gen": 9, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null}]}]}, {"id": 65, "name": "جعدار", "gen": 7, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null, "children": [{"id": 140, "name": "محمد (كنتوح)", "gen": 8, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null, "children": [{"id": 356, "name": "محمد (كنتوح)", "gen": 9, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null}]}, {"id": 141, "name": "علي", "gen": 8, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null, "children": [{"id": 357, "name": "سطام", "gen": 9, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null}, {"id": 358, "name": "محمد", "gen": 9, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null}, {"id": 359, "name": "عبدالله", "gen": 9, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null}, {"id": 360, "name": "عبدالعزيز", "gen": 9, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null}]}, {"id": 142, "name": "محمد", "gen": 8, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null, "children": [{"id": 361, "name": "أحمد", "gen": 9, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null}, {"id": 362, "name": "البراء", "gen": 9, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null}, {"id": 363, "name": "أسيد", "gen": 9, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null}]}]}]}, {"id": 31, "name": "أحمد", "gen": 6, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null, "children": [{"id": 66, "name": "هادي", "gen": 7, "status": "كلالة", "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null}, {"id": 67, "name": "أحمد", "gen": 7, "status": "خلف بنات فقط", "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null}, {"id": 68, "name": "محمد (ميتيم)", "gen": 7, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null, "children": [{"id": 143, "name": "علي", "gen": 8, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null, "children": [{"id": 364, "name": "محمد", "gen": 9, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null, "children": [{"id": 690, "name": "إياد", "gen": 10, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null}, {"id": 691, "name": "بسام", "gen": 10, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null, "children": [{"id": 802, "name": "محمد", "gen": 11, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null}]}, {"id": 692, "name": "أحمد", "gen": 10, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null}, {"id": 693, "name": "حامد", "gen": 10, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null}]}, {"id": 365, "name": "حامد", "gen": 9, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null}]}, {"id": 144, "name": "ياسين", "gen": 8, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null, "children": [{"id": 366, "name": "محمد", "gen": 9, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null, "children": [{"id": 694, "name": "طلحة", "gen": 10, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null}, {"id": 695, "name": "عبدالعزيز", "gen": 10, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null}, {"id": 696, "name": "مالك", "gen": 10, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null}]}, {"id": 367, "name": "أحمد", "gen": 9, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null, "children": [{"id": 697, "name": "ياسين", "gen": 10, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null}, {"id": 698, "name": "يزن", "gen": 10, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null}, {"id": 699, "name": "فارس", "gen": 10, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null}]}, {"id": 368, "name": "عبدالهادي", "gen": 9, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null, "children": [{"id": 700, "name": "حذيفة", "gen": 10, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null}, {"id": 701, "name": "حاتم", "gen": 10, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null}, {"id": 702, "name": "عبدالمجيد", "gen": 10, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null}, {"id": 703, "name": "حازم", "gen": 10, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null}, {"id": 704, "name": "عاصم", "gen": 10, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null}, {"id": 705, "name": "راسم", "gen": 10, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null}]}, {"id": 369, "name": "طارق", "gen": 9, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null, "children": [{"id": 706, "name": "زياد", "gen": 10, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null}, {"id": 707, "name": "إياد", "gen": 10, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null}, {"id": 708, "name": "كنان", "gen": 10, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null}]}, {"id": 370, "name": "حاتم", "gen": 9, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null, "children": [{"id": 709, "name": "شهاب", "gen": 10, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null}, {"id": 710, "name": "جواد", "gen": 10, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null}]}, {"id": 371, "name": "معاذ", "gen": 9, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null, "children": [{"id": 711, "name": "سعد", "gen": 10, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null}, {"id": 712, "name": "ياسين", "gen": 10, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null}, {"id": 713, "name": "محمد", "gen": 10, "status": "كلالة", "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null}]}, {"id": 372, "name": "حمزة", "gen": 9, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null}, {"id": 373, "name": "أسامة", "gen": 9, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null}]}]}]}, {"id": 32, "name": "عبدالله", "gen": 6, "status": "كلالة", "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null}]}]}, {"id": 10, "name": "محسن", "gen": 4, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null, "children": [{"id": 16, "name": "عمر", "gen": 5, "status": "خلف بنات فقط", "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null}, {"id": 17, "name": "محمد", "gen": 5, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null, "children": [{"id": 33, "name": "أحمد", "gen": 6, "status": "كلالة", "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null}, {"id": 34, "name": "علي (فقيه)", "gen": 6, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null, "children": [{"id": 69, "name": "أحمد", "gen": 7, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null, "children": [{"id": 145, "name": "هادي", "gen": 8, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null, "children": [{"id": 374, "name": "معاذ", "gen": 9, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null}, {"id": 375, "name": "منذر", "gen": 9, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null}, {"id": 376, "name": "مراد", "gen": 9, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null}, {"id": 377, "name": "مؤنس", "gen": 9, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null}]}]}, {"id": 70, "name": "محمد", "gen": 7, "status": "كلالة", "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null}, {"id": 71, "name": "إبراهيم", "gen": 7, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null, "children": [{"id": 146, "name": "أحمد", "gen": 8, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null, "children": [{"id": 378, "name": "إبراهيم", "gen": 9, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null}, {"id": 379, "name": "محمد", "gen": 9, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null}, {"id": 380, "name": "عبدالإله", "gen": 9, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null}]}, {"id": 147, "name": "محمد", "gen": 8, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null, "children": [{"id": 381, "name": "إبراهيم", "gen": 9, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null}, {"id": 382, "name": "أيهم", "gen": 9, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null}]}, {"id": 148, "name": "عبدالله", "gen": 8, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null, "children": [{"id": 383, "name": "مازن", "gen": 9, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null}, {"id": 384, "name": "محمود", "gen": 9, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null}, {"id": 385, "name": "أحمد", "gen": 9, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null}, {"id": 386, "name": "أمجد", "gen": 9, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null}, {"id": 387, "name": "عبدالسلام", "gen": 9, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null}]}, {"id": 149, "name": "محمود", "gen": 8, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null}, {"id": 150, "name": "عبدالسلام", "gen": 8, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null}]}, {"id": 72, "name": "حسين", "gen": 7, "status": "كلالة", "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null}, {"id": 73, "name": "هادي", "gen": 7, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null, "children": [{"id": 151, "name": "علي", "gen": 8, "status": "كلالة", "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null}, {"id": 152, "name": "محمد", "gen": 8, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null, "children": [{"id": 388, "name": "أنس", "gen": 9, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null}, {"id": 389, "name": "أُنيس", "gen": 9, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null}, {"id": 390, "name": "إياس", "gen": 9, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null}, {"id": 391, "name": "أوس", "gen": 9, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null}, {"id": 392, "name": "أبان", "gen": 9, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null}, {"id": 393, "name": "أويس", "gen": 9, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null}]}, {"id": 153, "name": "عمر", "gen": 8, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null, "children": [{"id": 394, "name": "هادي", "gen": 9, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null}]}, {"id": 154, "name": "عبدالودود", "gen": 8, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null, "children": [{"id": 395, "name": "فيصل", "gen": 9, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null}, {"id": 396, "name": "محمد", "gen": 9, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null}, {"id": 397, "name": "يسار", "gen": 9, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null}]}]}]}]}, {"id": 18, "name": "حسين", "gen": 5, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null, "children": [{"id": 35, "name": "عمر", "gen": 6, "status": "كلالة", "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null}, {"id": 36, "name": "أحمد", "gen": 6, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null, "children": [{"id": 74, "name": "عمر", "gen": 7, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null, "children": [{"id": 155, "name": "محمد", "gen": 8, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null, "children": [{"id": 398, "name": "حذيفة", "gen": 9, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null, "children": [{"id": 714, "name": "فيصل", "gen": 10, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null}]}, {"id": 399, "name": "حمزة", "gen": 9, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null}, {"id": 400, "name": "صهيب", "gen": 9, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null}, {"id": 401, "name": "غسان", "gen": 9, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null}, {"id": 402, "name": "حسان", "gen": 9, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null}, {"id": 403, "name": "يمان", "gen": 9, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null}]}, {"id": 156, "name": "عبدالله", "gen": 8, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null, "children": [{"id": 404, "name": "عمر", "gen": 9, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null}, {"id": 405, "name": "أسامة", "gen": 9, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null}, {"id": 406, "name": "نبيل", "gen": 9, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null}, {"id": 407, "name": "زياد", "gen": 9, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null}, {"id": 408, "name": "محمد", "gen": 9, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null}, {"id": 409, "name": "البراء", "gen": 9, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null}]}, {"id": 157, "name": "أحمد", "gen": 8, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null, "children": [{"id": 410, "name": "مازن", "gen": 9, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null, "children": [{"id": 715, "name": "أحمد", "gen": 10, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null}]}, {"id": 411, "name": "عمر", "gen": 9, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null}, {"id": 412, "name": "مروان", "gen": 9, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null}, {"id": 413, "name": "خالد", "gen": 9, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null}, {"id": 414, "name": "محمد", "gen": 9, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null, "children": [{"id": 716, "name": "عبدالرحمن", "gen": 10, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null}]}]}, {"id": 158, "name": "عبدالرحمن", "gen": 8, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null, "children": [{"id": 415, "name": "محمد", "gen": 9, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null}, {"id": 416, "name": "أحمد", "gen": 9, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null}, {"id": 417, "name": "عمر", "gen": 9, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null}, {"id": 418, "name": "إلياس", "gen": 9, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null}]}, {"id": 159, "name": "عبدالرزاق", "gen": 8, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null, "children": [{"id": 419, "name": "تميم", "gen": 9, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null}, {"id": 420, "name": "آسر", "gen": 9, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null}]}, {"id": 160, "name": "عبدالخالق", "gen": 8, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null, "children": [{"id": 421, "name": "معتز", "gen": 9, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null}, {"id": 422, "name": "عبدالله", "gen": 9, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null}, {"id": 423, "name": "حسين", "gen": 9, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null}]}, {"id": 161, "name": "عبداللطيف", "gen": 8, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null, "children": [{"id": 424, "name": "نزار", "gen": 9, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null}, {"id": 425, "name": "مصعب", "gen": 9, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null}, {"id": 426, "name": "مؤيد", "gen": 9, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null}, {"id": 427, "name": "مالك", "gen": 9, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null}, {"id": 428, "name": "معن", "gen": 9, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null}]}, {"id": 162, "name": "عبدالعزيز", "gen": 8, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null, "children": [{"id": 429, "name": "نواف", "gen": 9, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null}]}, {"id": 163, "name": "عبدالإله", "gen": 8, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null, "children": [{"id": 430, "name": "قصي", "gen": 9, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null}, {"id": 431, "name": "لؤي", "gen": 9, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null}, {"id": 432, "name": "أمير", "gen": 9, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null}]}, {"id": 164, "name": "عبدالوهاب", "gen": 8, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null}, {"id": 165, "name": "سلطان", "gen": 8, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null}, {"id": 166, "name": "عيسى", "gen": 8, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null}, {"id": 167, "name": "إدريس", "gen": 8, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null}, {"id": 168, "name": "إسماعيل", "gen": 8, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null}]}, {"id": 75, "name": "محمد", "gen": 7, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null, "children": [{"id": 169, "name": "عمر (صغير)", "gen": 8, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null, "children": [{"id": 433, "name": "عبدالمحسن", "gen": 9, "status": "خلف بنات فقط", "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null}, {"id": 434, "name": "وليد", "gen": 9, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null, "children": [{"id": 717, "name": "خالد", "gen": 10, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null}, {"id": 718, "name": "إياد", "gen": 10, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null}]}, {"id": 435, "name": "عماد", "gen": 9, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null, "children": [{"id": 719, "name": "عمر", "gen": 10, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null}, {"id": 720, "name": "محمد", "gen": 10, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null}, {"id": 721, "name": "جواد", "gen": 10, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null}]}, {"id": 436, "name": "حسام", "gen": 9, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null, "children": [{"id": 722, "name": "بتال", "gen": 10, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null}]}]}]}]}, {"id": 37, "name": "إبراهيم", "gen": 6, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null, "children": [{"id": 76, "name": "هادي", "gen": 7, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null, "children": [{"id": 170, "name": "علي", "gen": 8, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null, "children": [{"id": 437, "name": "أصيل", "gen": 9, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null}, {"id": 438, "name": "محمد", "gen": 9, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null}, {"id": 439, "name": "سيف", "gen": 9, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null}]}, {"id": 171, "name": "إبراهيم", "gen": 8, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null, "children": [{"id": 440, "name": "هادي", "gen": 9, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null, "children": [{"id": 723, "name": "إبراهيم", "gen": 10, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null}]}, {"id": 441, "name": "علي", "gen": 9, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null, "children": [{"id": 724, "name": "زكريا", "gen": 10, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null}, {"id": 725, "name": "إياس", "gen": 10, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null}, {"id": 726, "name": "أسامة", "gen": 10, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null}]}, {"id": 442, "name": "زكريا", "gen": 9, "status": "كلالة", "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null}, {"id": 443, "name": "عبدالله", "gen": 9, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null}, {"id": 444, "name": "أحمد", "gen": 9, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null, "children": [{"id": 727, "name": "ضياء", "gen": 10, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null}, {"id": 728, "name": "عبدالله", "gen": 10, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null}]}, {"id": 445, "name": "خليل", "gen": 9, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null, "children": [{"id": 729, "name": "أيهم", "gen": 10, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null}]}, {"id": 446, "name": "يحيى", "gen": 9, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null}, {"id": 447, "name": "محمد", "gen": 9, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null}]}]}, {"id": 77, "name": "محمد", "gen": 7, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null, "children": [{"id": 172, "name": "محمد", "gen": 8, "status": "كلالة", "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null}, {"id": 173, "name": "علي", "gen": 8, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null, "children": [{"id": 448, "name": "أحمد", "gen": 9, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null}, {"id": 449, "name": "مهند", "gen": 9, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null}, {"id": 450, "name": "محمد", "gen": 9, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null}]}]}, {"id": 78, "name": "محسن", "gen": 7, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null, "children": [{"id": 174, "name": "هادي", "gen": 8, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null, "children": [{"id": 451, "name": "محمد", "gen": 9, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null, "children": [{"id": 730, "name": "أنس", "gen": 10, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null}, {"id": 731, "name": "زيد", "gen": 10, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null}, {"id": 732, "name": "ليث", "gen": 10, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null}]}, {"id": 452, "name": "إبراهيم", "gen": 9, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null, "children": [{"id": 733, "name": "مناف", "gen": 10, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null}, {"id": 734, "name": "عبدالرحمن", "gen": 10, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null}, {"id": 735, "name": "معاذ", "gen": 10, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null}]}, {"id": 453, "name": "محسن", "gen": 9, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null, "children": [{"id": 736, "name": "هادي", "gen": 10, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null}]}, {"id": 454, "name": "صالح", "gen": 9, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null, "children": [{"id": 737, "name": "سامر", "gen": 10, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null}]}, {"id": 455, "name": "حذيفة", "gen": 9, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null, "children": [{"id": 738, "name": "عمر", "gen": 10, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null}]}]}, {"id": 175, "name": "محمد", "gen": 8, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null, "children": [{"id": 456, "name": "رستم", "gen": 9, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null, "children": [{"id": 739, "name": "محمد", "gen": 10, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null}, {"id": 740, "name": "يزن", "gen": 10, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null}]}, {"id": 457, "name": "زكريا", "gen": 9, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null}, {"id": 458, "name": "خالد", "gen": 9, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null, "children": [{"id": 741, "name": "محمد", "gen": 10, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null}, {"id": 742, "name": "مالك", "gen": 10, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null}]}, {"id": 459, "name": "بندر", "gen": 9, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null, "children": [{"id": 743, "name": "فهد", "gen": 10, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null}]}]}]}]}, {"id": 38, "name": "عبدالله", "gen": 6, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null, "children": [{"id": 79, "name": "محمد (كبير)", "gen": 7, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null, "children": [{"id": 176, "name": "هشام", "gen": 8, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null, "children": [{"id": 460, "name": "الوليد", "gen": 9, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null}]}, {"id": 177, "name": "عبدالله", "gen": 8, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null}, {"id": 178, "name": "أحمد", "gen": 8, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null}, {"id": 179, "name": "يزيد", "gen": 8, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null}]}, {"id": 80, "name": "محمد (صغير)", "gen": 7, "status": "خلف بنات فقط", "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null}]}, {"id": 39, "name": "محمد", "gen": 6, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null, "children": [{"id": 81, "name": "يحيى", "gen": 7, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null, "children": [{"id": 180, "name": "محمد", "gen": 8, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null, "children": [{"id": 461, "name": "يزن", "gen": 9, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null}, {"id": 462, "name": "معن", "gen": 9, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null}, {"id": 463, "name": "يمان", "gen": 9, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null}, {"id": 464, "name": "عنان", "gen": 9, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null}, {"id": 465, "name": "رزين", "gen": 9, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null}]}]}, {"id": 82, "name": "عمر", "gen": 7, "status": "كلالة", "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null}]}]}]}]}]}, {"id": 4, "name": "حمد", "gen": 2, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null, "children": [{"id": 6, "name": "أحمد الملقب دوم", "gen": 3, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null, "children": [{"id": 11, "name": "بدوي", "gen": 4, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null, "children": [{"id": 19, "name": "علي", "gen": 5, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null, "children": [{"id": 40, "name": "رازم", "gen": 6, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null, "children": [{"id": 83, "name": "محمد", "gen": 7, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null, "children": [{"id": 181, "name": "أحمد", "gen": 8, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null, "children": [{"id": 466, "name": "يحيى", "gen": 9, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null, "children": [{"id": 744, "name": "هاني", "gen": 10, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null}, {"id": 745, "name": "أحمد", "gen": 10, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null}]}, {"id": 467, "name": "عبده", "gen": 9, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null, "children": [{"id": 746, "name": "فهد", "gen": 10, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null}]}, {"id": 468, "name": "سيبان", "gen": 9, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null, "children": [{"id": 747, "name": "محمد", "gen": 10, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null}, {"id": 748, "name": "فراس", "gen": 10, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null}]}, {"id": 469, "name": "عبدالله", "gen": 9, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null, "children": [{"id": 749, "name": "محمد", "gen": 10, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null}, {"id": 750, "name": "أحمد", "gen": 10, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null}]}, {"id": 470, "name": "علي", "gen": 9, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null, "children": [{"id": 751, "name": "أصيل", "gen": 10, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null}, {"id": 752, "name": "يوسف", "gen": 10, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null}, {"id": 753, "name": "وسام", "gen": 10, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null}, {"id": 754, "name": "عبدالرحيم", "gen": 10, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null}]}, {"id": 471, "name": "ماجد", "gen": 9, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null, "children": [{"id": 755, "name": "عبدالرحمن", "gen": 10, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null}, {"id": 756, "name": "مراد", "gen": 10, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null}]}, {"id": 472, "name": "يوسف", "gen": 9, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null}]}, {"id": 182, "name": "يحيى", "gen": 8, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null, "children": [{"id": 473, "name": "علي", "gen": 9, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null, "children": [{"id": 757, "name": "عادل", "gen": 10, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null}, {"id": 758, "name": "يحيى", "gen": 10, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null, "children": [{"id": 803, "name": "علي", "gen": 11, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null}]}, {"id": 759, "name": "أحمد", "gen": 10, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null, "children": [{"id": 804, "name": "عمر", "gen": 11, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null}, {"id": 805, "name": "آسر", "gen": 11, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null}, {"id": 806, "name": "بتال", "gen": 11, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null}]}, {"id": 760, "name": "طارق", "gen": 10, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null, "children": [{"id": 807, "name": "زياد", "gen": 11, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null}]}, {"id": 761, "name": "نايف", "gen": 10, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null}, {"id": 762, "name": "سعود", "gen": 10, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null}]}, {"id": 474, "name": "أحمد", "gen": 9, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null}, {"id": 475, "name": "محمد", "gen": 9, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null}]}]}]}]}, {"id": 20, "name": "محمد", "gen": 5, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null, "children": [{"id": 41, "name": "يحيى", "gen": 6, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null, "children": [{"id": 84, "name": "علي", "gen": 7, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null, "children": [{"id": 183, "name": "يحيى", "gen": 8, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null, "children": [{"id": 476, "name": "علي", "gen": 9, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null}, {"id": 477, "name": "عدي", "gen": 9, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null}]}]}, {"id": 85, "name": "محمد (مكبش)", "gen": 7, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null, "children": [{"id": 184, "name": "علي", "gen": 8, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null}, {"id": 185, "name": "أحمد", "gen": 8, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null, "children": [{"id": 478, "name": "وسام", "gen": 9, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null}, {"id": 479, "name": "أيمن", "gen": 9, "status": "كلالة", "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null}]}, {"id": 186, "name": "قاضي", "gen": 8, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null, "children": [{"id": 480, "name": "سعود", "gen": 9, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null}, {"id": 481, "name": "أيمن", "gen": 9, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null}, {"id": 482, "name": "يزيد", "gen": 9, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null}, {"id": 483, "name": "يحيى", "gen": 9, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null}, {"id": 484, "name": "أحمد", "gen": 9, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null}, {"id": 485, "name": "زياد", "gen": 9, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null}]}]}, {"id": 86, "name": "يحيى", "gen": 7, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null, "children": [{"id": 187, "name": "محمد", "gen": 8, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null, "children": [{"id": 486, "name": "علي", "gen": 9, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null, "children": [{"id": 763, "name": "حسام", "gen": 10, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null}]}, {"id": 487, "name": "حاتم", "gen": 9, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null, "children": [{"id": 764, "name": "عدي", "gen": 10, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null}, {"id": 765, "name": "محمد", "gen": 10, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null}]}, {"id": 488, "name": "حافظ", "gen": 9, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null}, {"id": 489, "name": "عبدالسلام", "gen": 9, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null}, {"id": 490, "name": "يحيى", "gen": 9, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null}, {"id": 491, "name": "زياد", "gen": 9, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null}]}, {"id": 188, "name": "محمد (الفاروق)", "gen": 8, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null, "children": [{"id": 492, "name": "يحيى", "gen": 9, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null}, {"id": 493, "name": "حسن", "gen": 9, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null}, {"id": 494, "name": "أحمد", "gen": 9, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null}, {"id": 495, "name": "منصور", "gen": 9, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null}, {"id": 496, "name": "عمر", "gen": 9, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null}, {"id": 497, "name": "ناصر", "gen": 9, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null, "children": [{"id": 766, "name": "محمد", "gen": 10, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null}, {"id": 767, "name": "مؤيد", "gen": 10, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null}]}, {"id": 498, "name": "عبدالله", "gen": 9, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null}, {"id": 499, "name": "أبو بكر", "gen": 9, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null, "children": [{"id": 768, "name": "خالد", "gen": 10, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null}]}, {"id": 500, "name": "عثمان", "gen": 9, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null}, {"id": 501, "name": "إبراهيم", "gen": 9, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null}, {"id": 502, "name": "عبدالعزيز", "gen": 9, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null}, {"id": 503, "name": "يزيد", "gen": 9, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null}, {"id": 504, "name": "علي", "gen": 9, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null}]}, {"id": 189, "name": "علي", "gen": 8, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null, "children": [{"id": 505, "name": "حافظ", "gen": 9, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null}, {"id": 506, "name": "محمد", "gen": 9, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null}, {"id": 507, "name": "إسماعيل", "gen": 9, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null}, {"id": 508, "name": "عبدالرحمن", "gen": 9, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null}, {"id": 509, "name": "أنور", "gen": 9, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null}, {"id": 510, "name": "منذر", "gen": 9, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null}]}, {"id": 190, "name": "عمر", "gen": 8, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null, "children": [{"id": 511, "name": "عبدالرحمن", "gen": 9, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null}, {"id": 512, "name": "فهد", "gen": 9, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null, "children": [{"id": 769, "name": "عمر", "gen": 10, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null}]}, {"id": 513, "name": "يحيى", "gen": 9, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null}, {"id": 514, "name": "عبدالعزيز", "gen": 9, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null}]}, {"id": 191, "name": "أيوب", "gen": 8, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null, "children": [{"id": 515, "name": "ريان", "gen": 9, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null}]}, {"id": 192, "name": "عبدالله", "gen": 8, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null}, {"id": 193, "name": "أحمد", "gen": 8, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null}, {"id": 194, "name": "ريان", "gen": 8, "status": "كلالة", "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null}, {"id": 195, "name": "خالد", "gen": 8, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null}]}]}, {"id": 42, "name": "أحمد", "gen": 6, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null, "children": [{"id": 87, "name": "محمد", "gen": 7, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null, "children": [{"id": 196, "name": "أحمد", "gen": 8, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null, "children": [{"id": 516, "name": "محمد", "gen": 9, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null}, {"id": 517, "name": "معاذ", "gen": 9, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null}]}, {"id": 197, "name": "علي", "gen": 8, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null}, {"id": 198, "name": "يحيى", "gen": 8, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null, "children": [{"id": 518, "name": "محمد", "gen": 9, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null}, {"id": 519, "name": "عبدالعزيز", "gen": 9, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null}, {"id": 520, "name": "مهند", "gen": 9, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null}, {"id": 521, "name": "أسامة", "gen": 9, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null}, {"id": 522, "name": "أمجد", "gen": 9, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null}]}, {"id": 199, "name": "عثمان", "gen": 8, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null, "children": [{"id": 523, "name": "أحمد", "gen": 9, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null}]}, {"id": 200, "name": "عمر", "gen": 8, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null, "children": [{"id": 524, "name": "لؤي", "gen": 9, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null}]}, {"id": 201, "name": "منصور", "gen": 8, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null, "children": [{"id": 525, "name": "عبدالعزيز", "gen": 9, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null}, {"id": 526, "name": "محمد", "gen": 9, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null}, {"id": 527, "name": "إياد", "gen": 9, "status": null, "bd": null, "bp": null, "dd": null, "dp": null, "res": null, "ph": null, "em": null, "img": null}]}]}]}]}]}]}]}]};
+
+const statusColor = (status, gen) => {
+  if(status === '؟؟!' || (status && status.includes('؟'))) return '#8B7355';
+  if(status === 'كلالة') return '#9C4A34';
+  if(status === 'خلف بنات فقط') return '#C9963B';
+  return '#3D7068';
+};
+
+function countAll(n){ let c=1; if(n.children) n.children.forEach(ch=>c+=countAll(ch)); return c; }
+const TOTAL = countAll(rawData);
+document.getElementById('totalCount').textContent = TOTAL;
+
+// ---------- layout ----------
+const svg = d3.select('#tree-svg');
+const gLinks = svg.append('g').attr('class','links-layer');
+const gNodes = svg.append('g').attr('class','nodes-layer');
+const gRoot = svg.append('g');
+gRoot.node().appendChild(gLinks.node());
+gRoot.node().appendChild(gNodes.node());
+
+const zoom = d3.zoom().scaleExtent([0.05, 3]).clickDistance(8).on('zoom', (ev)=>{ gRoot.attr('transform', ev.transform); });
+svg.call(zoom);
+
+const dx = 34;   // vertical spacing between siblings
+const dy = 190;  // horizontal spacing between generations
+
+let root = d3.hierarchy(rawData, d=>d.children);
+root.x0 = 0; root.y0 = 0;
+root.descendants().forEach((d,i)=>{
+  d.id = d.data.id;
+  d._children = d.children;
+  // default collapse beyond generation 5 for a manageable first view
+  if(d.depth >= 4) { d.children = null; }
+});
+
+const treeLayout = d3.tree().nodeSize([dx, dy]);
+
+const diagonal = d3.linkHorizontal()
+  .x(d => -d.y)   // mirror for RTL: root grows to the LEFT visually (reading right->left)
+  .y(d => d.x);
+
+let nodeById = new Map();
+
+function update(source){
+  root.descendants().forEach(n=>{
+    if(n.__origX !== undefined){ n.x = n.__origX; delete n.__origX; }
+  });
+  treeLayout(root);
+  const nodes = root.descendants();
+  const links = root.links();
+  nodeById = new Map(nodes.map(d=>[d.id,d]));
+
+  document.getElementById('visibleCount').textContent = nodes.length;
+
+  // ---- nodes ----
+  const node = gNodes.selectAll('g.node').data(nodes, d=>d.id);
+
+  const nodeEnter = node.enter().append('g')
+    .attr('class', d => 'node gen'+d.depth)
+    .attr('transform', d => `translate(${-source.y0},${source.x0})`)
+    .on('mousemove', (event,d)=>{
+      const t = document.getElementById('tooltip');
+      const kids = (d._children||d.children||[]).length;
+      t.style.display='block';
+      t.style.left = (event.clientX+16)+'px';
+      t.style.top = (event.clientY+12)+'px';
+      t.innerHTML = `<b>${d.data.name}</b><br>الجيل ${d.data.gen ?? '-'} · رقم ${d.data.id}` +
+                    (kids? `<br>عدد الأبناء المسجّلين: ${kids}`:'') +
+                    (d.data.status ? `<br>الحالة: ${d.data.status}`:'');
+    })
+    .on('mouseleave', ()=>{ document.getElementById('tooltip').style.display='none'; });
+
+  nodeEnter.append('circle')
+    .attr('class', 'hit-area')
+    .attr('r', 15)
+    .attr('fill', 'transparent')
+    .style('cursor', 'pointer')
+    .on('click', (event,d)=>{
+      event.stopPropagation();
+      if(d.children){ d._children = d.children; d.children = null; }
+      else { d.children = d._children; }
+      update(d);
+    });
+
+  nodeEnter.append('circle')
+    .attr('class', 'visible-dot')
+    .attr('r', d => d.depth===0 ? 9 : 5.5)
+    .attr('fill', d => statusColor(d.data.status, d.depth))
+    .attr('stroke', '#FFFCF4')
+    .style('pointer-events', 'none');
+
+  nodeEnter.append('text')
+    .attr('dir','rtl')
+    .attr('x', 0)
+    .attr('y', d => d.depth===0 ? -20 : -13)
+    .attr('text-anchor', 'middle')
+    .text(d => d.data.name)
+    .on('click', (event,d)=>{
+      event.stopPropagation();
+      showDetails(d);
+    });
+
+  nodeEnter.append('text')
+    .attr('class','count-badge')
+    .attr('x', -18)
+    .attr('dy', 3)
+    .attr('text-anchor','end')
+    .attr('direction','ltr')
+    .attr('unicode-bidi','isolate')
+    .text(d => d._children && !d.children ? `+${countAll(d.data)-1}` : '');
+
+  const nodeUpdate = nodeEnter.merge(node);
+  nodeUpdate.transition().duration(400)
+    .attr('transform', d => `translate(${-d.y},${d.x})`);
+  nodeUpdate.select('circle.visible-dot')
+    .attr('r', d => d.depth===0 ? 9 : (d._children ? 6.5 : 5));
+  nodeUpdate.select('text.count-badge')
+    .text(d => d._children && !d.children ? `+${countAll(d.data)-1}` : '');
+
+  node.exit().transition().duration(300)
+    .attr('transform', d => `translate(${-source.y},${source.x})`)
+    .remove();
+
+  // ---- links ----
+  const link = gLinks.selectAll('path.link').data(links, d => d.target.id);
+
+  const linkEnter = link.enter().append('path')
+    .attr('class','link')
+    .attr('d', d => {
+      const o = {x: source.x0, y: source.y0};
+      return diagonal({source:o, target:o});
+    });
+
+  linkEnter.merge(link).transition().duration(400)
+    .attr('d', diagonal);
+
+  link.exit().transition().duration(300)
+    .attr('d', d => {
+      const o = {x: source.x, y: source.y};
+      return diagonal({source:o, target:o});
+    })
+    .remove();
+
+  nodes.forEach(d => { d.x0 = d.x; d.y0 = d.y; });
+}
+
+update(root);
+
+// initial centering
+function centerView(){
+  const bbox = gRoot.node().getBBox();
+  const svgEl = document.getElementById('tree-svg');
+  const w = svgEl.clientWidth, h = svgEl.clientHeight;
+  const scale = Math.min(w / (bbox.width+200), h/(bbox.height+200), 1) || 0.8;
+  const tx = w/2 - (bbox.x + bbox.width/2)*scale;
+  const ty = h/2 - (bbox.y + bbox.height/2)*scale;
+  svg.transition().duration(500).call(zoom.transform, d3.zoomIdentity.translate(tx,ty).scale(Math.max(scale,0.35)));
+}
+setTimeout(centerView, 200);
+
+document.getElementById('resetView').onclick = centerView;
+
+document.getElementById('expandAll').onclick = ()=>{
+  root.descendants().forEach(d=>{ if(d._children){ d.children = d._children; }});
+  update(root);
+  setTimeout(centerView, 450);
+};
+document.getElementById('collapseAll').onclick = ()=>{
+  root.descendants().forEach(d=>{
+    if(d.depth >= 1 && d.children){ d._children = d.children; d.children = null; }
+  });
+  update(root);
+  setTimeout(centerView, 450);
+};
+
+// ---------- search ----------
+const flatIndex = [];
+(function buildIndex(n, path){
+  const newPath = path.concat(n.name);
+  const chain = newPath.slice().reverse(); // [self, father, grandfather, ...]
+  flatIndex.push({id:n.id, name:n.name, path:chain.join(' ← '), chain});
+  (n.children||[]).forEach(c=>buildIndex(c, newPath));
+})(rawData, []);
+
+const searchInput = document.getElementById('search');
+const suggestBox = document.getElementById('suggest');
+
+function normalizeAr(s){
+  return s.replace(/[إأآا]/g,'ا').replace(/ى/g,'ي').replace(/ة/g,'ه').replace(/\s+/g,' ').trim();
+}
+
+function matchesInOrder(hay, tokens){
+  let pos = 0;
+  for(const t of tokens){
+    const idx = hay.indexOf(t, pos);
+    if(idx === -1) return false;
+    pos = idx + t.length;
+  }
+  return true;
+}
+
+searchInput.addEventListener('input', ()=>{
+  const q = searchInput.value.trim();
+  if(!q){ suggestBox.style.display='none'; return; }
+  const tokens = normalizeAr(q).split(/\s+/).filter(Boolean);
+  const matches = flatIndex.filter(x=>{
+    if(tokens.length > x.chain.length) return false;
+    return tokens.every((t,i) => normalizeAr(x.chain[i]).startsWith(t));
+  }).slice(0,25);
+  if(!matches.length){ suggestBox.innerHTML = '<div style="color:#aaa">لا نتائج</div>'; suggestBox.style.display='block'; return; }
+  suggestBox.innerHTML = matches.map(m=>`<div data-id="${m.id}">${m.name}<span class="path">${m.path}</span></div>`).join('');
+  suggestBox.style.display='block';
+});
+
+suggestBox.addEventListener('click', (e)=>{
+  const row = e.target.closest('div[data-id]');
+  if(!row) return;
+  goToPerson(parseInt(row.dataset.id));
+  suggestBox.style.display='none';
+  searchInput.value='';
+});
+
+function goToPerson(id){
+  // expand path to the node
+  let d = nodeById.get(id);
+  if(!d){
+    // need to expand ancestors first: walk hierarchy from root by id
+    function findAndExpand(node){
+      if(node.data.id === id) return node;
+      const kids = node.children || node._children;
+      if(!kids) return null;
+      for(const k of kids){
+        const res = findAndExpand(k);
+        if(res){ if(!node.children) { node.children = node._children; } return res; }
+      }
+      return null;
+    }
+    findAndExpand(root);
+    update(root);
+    d = nodeById.get(id);
+  }
+  setTimeout(()=>{
+    d = nodeById.get(id);
+    if(!d) return;
+    // highlight
+    d3.selectAll('.node').classed('highlight', n=>n.id===id);
+    const svgEl = document.getElementById('tree-svg');
+    const w = svgEl.clientWidth, h = svgEl.clientHeight;
+    const scale = 1;
+    const tx = w/2 + d.y*scale;
+    const ty = h/2 - d.x*scale;
+    svg.transition().duration(600).call(zoom.transform, d3.zoomIdentity.translate(tx,ty).scale(scale));
+    setTimeout(()=> d3.selectAll('.node').classed('highlight', false), 3000);
+    showDetails(d);
+  }, 500);
+}
+
+document.addEventListener('click', (e)=>{
+  if(!e.target.closest('.search-wrap')) suggestBox.style.display='none';
+});
+
+// ============ DETAIL PANEL ============
+const detailPanel = document.getElementById('detail-panel');
+document.getElementById('detailClose').onclick = ()=>{
+  detailPanel.classList.remove('open');
+  sheetSetState(detailPanel, 'closed');
+  clearLineageHighlight();
+};
+
+function breadcrumbOf(d){
+  const chain = [];
+  let cur = d;
+  while(cur){ chain.unshift(cur); cur = cur.parent; }
+  return chain;
+}
+
+document.getElementById('buildStamp').textContent = 'إصدار 2026-07-26 21:15 (تعديل تاريخ المرحلة 3)';
+let currentDetailId = null;
+// ================= LINEAGE HIGHLIGHT (dim distant branches) =================
+function highlightLineage(selNode){
+  // undo any straightening left over from a previously-selected person first,
+  // so consecutive clicks (without closing the panel) always start from the true layout
+  root.descendants().forEach(n=>{
+    if(n.__origX !== undefined){ n.x = n.__origX; delete n.__origX; }
+  });
+
+  // "core" = selNode's ancestor chain (up to root) + selNode's own full descendant subtree
+  const coreIds = new Set();
+  let cur = selNode;
+  while(cur){ coreIds.add(cur.data.id); cur = cur.parent; }
+  (function markDesc(n){ coreIds.add(n.id); (n.children||[]).forEach(markDesc); })(selNode.data);
+
+  const selChainIds = new Set();
+  { let c = selNode; while(c){ selChainIds.add(c.data.id); c = c.parent; } }
+
+  const allNodes = root.descendants();
+  allNodes.forEach(n=>{
+    if(coreIds.has(n.data.id)){ n.__lineageDist = 0; return; }
+    let walker = n, steps = 0;
+    while(walker && !selChainIds.has(walker.data.id)){ walker = walker.parent; steps++; }
+    n.__lineageDist = walker ? steps : 99;
+  });
+
+  const opacityFor = dist => Math.max(0.07, Math.pow(0.55, dist));
+
+  // straighten the ancestry chain into one clean vertical line, aligned on the selected person
+  const targetX = selNode.x;
+  allNodes.forEach(n=>{
+    if(selChainIds.has(n.data.id)){
+      if(n.__origX === undefined) n.__origX = n.x;
+      n.x = targetX;
+    }
+  });
+
+  // collision avoidance: nudge any non-chain node that now overlaps a straightened
+  // chain node (same depth, near-identical x) out of the way
+  const MIN_GAP = dx * 0.8;
+  allNodes.forEach(chainN=>{
+    if(!selChainIds.has(chainN.data.id)) return;
+    allNodes.forEach(n=>{
+      if(selChainIds.has(n.data.id)) return; // only push non-chain nodes
+      if(n.depth !== chainN.depth) return;   // collisions only matter within the same generation row
+      if(Math.abs(n.x - chainN.x) < MIN_GAP){
+        if(n.__origX === undefined) n.__origX = n.x;
+        const side = (n.__origX >= targetX) ? 1 : -1;
+        n.x = targetX + side * MIN_GAP;
+      }
+    });
+  });
+
+  gNodes.selectAll('g.node').transition().duration(700).ease(d3.easeCubicOut)
+    .style('opacity', n => opacityFor(n.__lineageDist))
+    .attr('transform', n => `translate(${-n.y},${n.x})`);
+
+  gLinks.selectAll('path.link').transition().duration(700).ease(d3.easeCubicOut)
+    .style('opacity', l => opacityFor(l.target.__lineageDist))
+    .attr('d', diagonal);
+}
+
+function clearLineageHighlight(){
+  const allNodes = root.descendants();
+  allNodes.forEach(n=>{
+    if(n.__origX !== undefined){ n.x = n.__origX; delete n.__origX; }
+  });
+
+  gNodes.selectAll('g.node').transition().duration(600).ease(d3.easeCubicOut)
+    .style('opacity', 1)
+    .attr('transform', n => `translate(${-n.y},${n.x})`);
+
+  gLinks.selectAll('path.link').transition().duration(600).ease(d3.easeCubicOut)
+    .style('opacity', 1)
+    .attr('d', diagonal);
+}
+
+
+function showDetails(d){
+  highlightLineage(d);
+  currentDetailId = d.data.id;
+  detailPanel.classList.add('open');
+  requestAnimationFrame(()=> sheetSetState(detailPanel, 'peek'));
+  document.getElementById('detailName').textContent = d.data.name;
+  document.getElementById('detailGenId').textContent = `الجيل ${d.data.gen ?? '-'} · رقم تسلسلي ${d.data.id}`;
+  const statusEl = document.getElementById('detailStatus');
+  statusEl.textContent = d.data.status ? ('الحالة: ' + d.data.status) : '';
+
+  // avatar
+  const avatarWrap = document.getElementById('detailAvatarWrap');
+  if(d.data.img){
+    avatarWrap.innerHTML = `<img class="avatar" src="${d.data.img}" alt="${d.data.name}" onerror="this.outerHTML='<div class=avatar-fallback>${d.data.name[0]}</div>'">`;
+  } else {
+    avatarWrap.innerHTML = `<div class="avatar-fallback">${d.data.name[0]}</div>`;
+  }
+
+  const kids = (d.children || d._children || []);
+  document.getElementById('detailChildren').textContent = kids.length;
+  document.getElementById('detailDescendants').textContent = countAll(d.data)-1;
+
+  // personal info rows (only show fields that have data)
+  const infoFields = [
+    ['bd','🎂 تاريخ الميلاد'], ['bp','📍 مكان الميلاد'],
+    ['dd','🕊 تاريخ الوفاة'], ['dp','📍 مكان الوفاة'],
+    ['res','🏠 مكان الإقامة'],
+  ];
+  const infoEl = document.getElementById('detailInfo');
+  let rows = infoFields
+    .filter(([k]) => d.data[k])
+    .map(([k,label]) => `<div class="info-row"><span class="k">${label}</span><span class="v">${d.data[k]}</span></div>`);
+  if(d.data.ph) rows.push(`<div class="info-row"><span class="k">📱 الجوال</span><span class="v"><a href="tel:${d.data.ph}">${d.data.ph}</a></span></div>`);
+  if(d.data.em) rows.push(`<div class="info-row"><span class="k">✉️ البريد</span><span class="v"><a href="mailto:${d.data.em}">${d.data.em}</a></span></div>`);
+  infoEl.innerHTML = rows.length ? rows.join('') : '<div style="color:#8a7f63;font-size:12.5px;">لا توجد معلومات مسجّلة بعد</div>';
+
+  // breadcrumb: starts at the person, ends at the founding ancestor (root)
+  const chain = breadcrumbOf(d).slice().reverse();
+  const bc = document.getElementById('detailBreadcrumb');
+  bc.innerHTML = chain.map((n,i)=>{
+    const isRoot = i===chain.length-1;
+    return `<span data-id="${n.data.id}" style="${isRoot?'font-weight:700;color:var(--gold);':''}">${n.data.name}</span>` + (i<chain.length-1?' ← ':'');
+  }).join('');
+  bc.querySelectorAll('span').forEach(sp=>{
+    sp.onclick = ()=> goToPerson(parseInt(sp.dataset.id));
+  });
+
+  // siblings
+  const sibLbl = document.getElementById('siblingsLbl');
+  const sibList = document.getElementById('detailSiblings');
+  sibList.innerHTML = '';
+  if(d.parent){
+    const sibs = (d.parent.children || d.parent._children || []).filter(s=>s.data.id!==d.data.id);
+    sibLbl.textContent = `الإخوة (${sibs.length})`;
+    sibList.innerHTML = sibs.map(s=>`<li data-id="${s.data.id}">${s.data.name}</li>`).join('') || '<li style="cursor:default;background:none;color:#8a7f63;">لا يوجد إخوة مسجّلون</li>';
+    sibList.querySelectorAll('li[data-id]').forEach(li=>{
+      li.onclick = ()=> goToPerson(parseInt(li.dataset.id));
+    });
+  } else {
+    sibLbl.textContent = 'الإخوة';
+    sibList.innerHTML = '<li style="cursor:default;background:none;color:#8a7f63;">الجد الأعلى للعائلة</li>';
+  }
+
+  // update URL (no reload) — best-effort only; some sandboxed preview
+  // environments (e.g. srcdoc iframes) block history changes entirely.
+  try{
+    const url = new URL(window.location);
+    url.searchParams.set('id', d.data.id);
+    window.history.replaceState({}, '', url);
+  } catch(err){ /* ignore: deep-link URL update not available in this context */ }
+}
+
+document.getElementById('copyLinkBtn').onclick = ()=>{
+  if(currentDetailId==null) return;
+  const url = new URL(window.location);
+  url.searchParams.set('id', currentDetailId);
+  navigator.clipboard.writeText(url.toString()).then(()=>{
+    const msg = document.getElementById('copy-msg');
+    msg.style.display='block';
+    setTimeout(()=> msg.style.display='none', 2000);
+  }).catch(()=>{
+    prompt('انسخ الرابط يدوياً:', url.toString());
+  });
+};
+
+// ============ EXPORT BRANCH AS IMAGE ============
+document.getElementById('exportBranchBtn').onclick = ()=>{
+  if(currentDetailId==null) return;
+  const d = nodeById.get(currentDetailId);
+  if(!d) return;
+  exportBranchImage(d);
+};
+
+document.getElementById('exportFullBtn').onclick = ()=>{
+  const proceed = confirm('الشجرة الكاملة تحتوي على ' + TOTAL + ' فرداً، وستُصدَّر كصورة واحدة كبيرة جداً (مناسبة للطباعة بمقاس بوستر عند مطبعة متخصصة، وليست لطابعة منزلية عادية). هل تريد المتابعة؟');
+  if(!proceed) return;
+  exportBranchImage({data: rawData});
+};
+
+function exportBranchImage(d){
+  const subData = d.data;
+  const subRoot = d3.hierarchy(subData, n=>n.children);
+  const dxE = 30, dyE = 180;
+  const layout = d3.tree().nodeSize([dxE, dyE]);
+  layout(subRoot);
+  const nodes = subRoot.descendants();
+  const links = subRoot.links();
+
+  let minX=Infinity,maxX=-Infinity,minY=Infinity,maxY=-Infinity;
+  nodes.forEach(n=>{ minX=Math.min(minX,n.x); maxX=Math.max(maxX,n.x); minY=Math.min(minY,n.y); maxY=Math.max(maxY,n.y); });
+  const pad = 60;
+  const width = (maxY-minY) + pad*2 + 160;
+  const height = (maxX-minX) + pad*2 + 40;
+
+  const ns = 'http://www.w3.org/2000/svg';
+  const svgEl = document.createElementNS(ns,'svg');
+  svgEl.setAttribute('width', width);
+  svgEl.setAttribute('height', height);
+  svgEl.setAttribute('viewBox', `0 0 ${width} ${height}`);
+  svgEl.style.background = '#F7F1E3';
+  svgEl.setAttribute('font-family','Amiri, serif');
+
+  const g = document.createElementNS(ns,'g');
+  const offsetX = pad + 130, offsetY = pad - minX;
+  g.setAttribute('transform', `translate(${offsetX},${offsetY})`);
+  svgEl.appendChild(g);
+
+  const diagE = d3.linkHorizontal().x(n=>-n.y).y(n=>n.x);
+  links.forEach(l=>{
+    const p = document.createElementNS(ns,'path');
+    p.setAttribute('d', diagE(l));
+    p.setAttribute('fill','none'); p.setAttribute('stroke','#B9AE93'); p.setAttribute('stroke-width','1.4');
+    g.appendChild(p);
+  });
+  nodes.forEach(n=>{
+    const grp = document.createElementNS(ns,'g');
+    grp.setAttribute('transform', `translate(${-n.y},${n.x})`);
+    const c = document.createElementNS(ns,'circle');
+    c.setAttribute('r', n.depth===0?9:5.5);
+    c.setAttribute('fill', statusColor(n.data.status));
+    c.setAttribute('stroke', '#FFFCF4'); c.setAttribute('stroke-width','2');
+    grp.appendChild(c);
+    const t = document.createElementNS(ns,'text');
+    t.setAttribute('x', 0); t.setAttribute('y', n.depth===0?-20:-13);
+    t.setAttribute('text-anchor','middle');
+    t.setAttribute('font-size', n.depth===0?19:13);
+    t.setAttribute('fill', n.depth===0? '#B8863B':'#1B3B3A');
+    t.setAttribute('font-weight', n.depth===0?'700':'400');
+    t.setAttribute('stroke','#F7F1E3'); t.setAttribute('stroke-width','3'); t.setAttribute('paint-order','stroke');
+    t.textContent = n.data.name;
+    grp.appendChild(t);
+    g.appendChild(grp);
+  });
+
+  // title
+  const title = document.createElementNS(ns,'text');
+  title.setAttribute('x', width/2); title.setAttribute('y', 30);
+  title.setAttribute('text-anchor','middle'); title.setAttribute('font-size','20');
+  title.setAttribute('fill','#1B3B3A'); title.setAttribute('font-weight','700');
+  title.textContent = `فرع ${subData.name} — شجرة قبيلة المدخلي (آل جردي و آل دوم)`;
+  svgEl.insertBefore(title, g);
+
+  const serializer = new XMLSerializer();
+  const svgStr = serializer.serializeToString(svgEl);
+  const svgBlob = new Blob(['<?xml version="1.0" standalone="no"?>' + svgStr], {type:'image/svg+xml;charset=utf-8'});
+  const url = URL.createObjectURL(svgBlob);
+  const img = new Image();
+  img.onload = ()=>{
+    const scale = 2;
+    const canvas = document.createElement('canvas');
+    canvas.width = width*scale; canvas.height = height*scale;
+    const ctx = canvas.getContext('2d');
+    ctx.scale(scale,scale);
+    ctx.fillStyle = '#F7F1E3';
+    ctx.fillRect(0,0,width,height);
+    ctx.drawImage(img,0,0);
+    URL.revokeObjectURL(url);
+    canvas.toBlob(blob=>{
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = `فرع_${subData.name}.png`;
+      a.click();
+    });
+  };
+  img.src = url;
+}
+
+// ============ STATS PANEL ============
+const statsPanel = document.getElementById('stats-panel');
+document.getElementById('statsToggle').onclick = ()=>{
+  statsPanel.classList.add('open');
+  requestAnimationFrame(()=> sheetSetState(statsPanel, 'peek'));
+  buildStats();
+};
+document.getElementById('statsClose').onclick = ()=>{
+  statsPanel.classList.remove('open');
+  sheetSetState(statsPanel, 'closed');
+};
+
+// ---- 3-state mobile bottom sheet: peek (small) / full (expanded) / closed ----
+const PEEK_PX = 130; // visible height when in "peek" state
+
+function sheetSetState(panelEl, state){
+  panelEl.dataset.sheetState = state;
+  if(!isMobileWidth()) return; // desktop uses the plain open/close class behavior
+  const h = panelEl.getBoundingClientRect().height || (window.innerHeight*0.85);
+  if(state === 'closed'){
+    panelEl.style.transform = `translateY(100%)`;
+  } else if(state === 'peek'){
+    panelEl.style.transform = `translateY(${Math.max(h - PEEK_PX, 0)}px)`;
+  } else if(state === 'full'){
+    panelEl.style.transform = `translateY(0)`;
+  }
+}
+function isMobileWidth(){ return window.innerWidth <= 720; }
+
+function enableSheetGestures(panelEl, onFullyClose){
+  let startY = null, startTranslate = 0, dragging = false;
+
+  panelEl.addEventListener('touchstart', (e)=>{
+    if(!isMobileWidth()) return;
+    startY = e.touches[0].clientY;
+    const style = window.getComputedStyle(panelEl);
+    let m42 = 0;
+    try{ m42 = new DOMMatrixReadOnly(style.transform).m42; } catch(err){ m42 = 0; }
+    startTranslate = m42;
+    dragging = true;
+    panelEl.style.transition = 'none';
+  }, {passive:true});
+
+  panelEl.addEventListener('touchmove', (e)=>{
+    if(!dragging || startY==null) return;
+    const dy = e.touches[0].clientY - startY;
+    const h = panelEl.getBoundingClientRect().height;
+    const newT = Math.min(Math.max(startTranslate + dy, 0), h);
+    panelEl.style.transform = `translateY(${newT}px)`;
+  }, {passive:true});
+
+  panelEl.addEventListener('touchend', (e)=>{
+    if(!dragging || startY==null) return;
+    panelEl.style.transition = '';
+    const dy = e.changedTouches[0].clientY - startY;
+    const state = panelEl.dataset.sheetState || 'peek';
+    const UP = -40, DOWN = 40;
+
+    if(state === 'peek'){
+      if(dy < UP) sheetSetState(panelEl, 'full');
+      else if(dy > DOWN){ sheetSetState(panelEl, 'closed'); onFullyClose(); }
+      else sheetSetState(panelEl, 'peek');
+    } else if(state === 'full'){
+      if(dy > DOWN) sheetSetState(panelEl, 'peek');
+      else sheetSetState(panelEl, 'full');
+    }
+    dragging = false; startY = null;
+  });
+}
+
+enableSheetGestures(detailPanel, ()=>{ detailPanel.classList.remove('open'); clearLineageHighlight(); });
+enableSheetGestures(statsPanel, ()=> statsPanel.classList.remove('open'));
+
+function buildStats(){
+  // gen counts
+  const genCounts = {};
+  const nameCounts = {};
+  flatIndex.forEach(x=>{
+    nameCounts[x.name] = (nameCounts[x.name]||0)+1;
+  });
+  (function walk(n){
+    genCounts[n.gen] = (genCounts[n.gen]||0)+1;
+    (n.children||[]).forEach(walk);
+  })(rawData);
+
+  const maxGenCount = Math.max(...Object.values(genCounts));
+  const genChart = document.getElementById('genChart');
+  genChart.innerHTML = Object.keys(genCounts).sort((a,b)=>a-b).map(g=>{
+    const c = genCounts[g];
+    const pct = Math.round(c/maxGenCount*100);
+    return `<div class="genbar-row"><div class="lbl">جيل ${g}</div><div class="bar-wrap"><div class="bar" style="width:${pct}%"></div></div><div class="num">${c}</div></div>`;
+  }).join('');
+
+  const nameRank = document.getElementById('nameRank');
+  const topNames = Object.entries(nameCounts).sort((a,b)=>b[1]-a[1]).slice(0,10);
+  nameRank.innerHTML = topNames.map(([name,c])=>`<div class="rank-row"><span>${name}</span><b>${c}</b></div>`).join('');
+
+  // largest branches: depth-3 nodes (4th generation) by total descendants
+  const depth3 = root.descendants().filter(n=>n.depth===3);
+  const branchSizes = depth3.map(n=>({id:n.data.id, name:n.data.name, size:countAll(n.data)-1, path: breadcrumbOf(n).map(x=>x.data.name).join(' ← ')}));
+  branchSizes.sort((a,b)=>b.size-a.size);
+  const branchRank = document.getElementById('branchRank');
+  branchRank.innerHTML = branchSizes.slice(0,10).map(b=>
+    `<div class="rank-row"><span class="n" data-id="${b.id}" title="${b.path}">${b.name}</span><b>${b.size}</b></div>`
+  ).join('');
+  branchRank.querySelectorAll('.n').forEach(el=>{
+    el.onclick = ()=>{ statsPanel.classList.remove('open'); goToPerson(parseInt(el.dataset.id)); };
+  });
+}
+
+// ============ DEEP LINK (called after login, once the tree is actually visible) ============
+function checkUrlParam(){
+  const idParam = new URL(window.location).searchParams.get('id');
+  if(idParam){
+    setTimeout(()=>{ goToPerson(parseInt(idParam)); }, 300);
+  }
+}
+</script>
+</body>
+</html>
