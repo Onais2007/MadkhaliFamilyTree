@@ -363,6 +363,27 @@
     #search{width:110px;}
     .btn{padding:6px 8px;font-size:11px;}
   }
+
+  /* short-height landscape phones: force a single-row, scrollable, compact header
+     so it can never push the whole canvas off-screen */
+  @media (max-height: 480px) and (orientation: landscape){
+    header{
+      flex-wrap:nowrap; padding:6px 12px; gap:8px;
+      overflow-x:auto; -webkit-overflow-scrolling:touch;
+    }
+    .brand{flex:0 0 auto;}
+    .brand small{display:none;}
+    .brand h1{font-size:13px;}
+    .seal-mini{width:24px;height:24px;font-size:11px;}
+    .toolbar{flex-wrap:nowrap; overflow-x:auto; -webkit-overflow-scrolling:touch;}
+    .search-wrap{flex:0 0 auto;}
+    #search{width:100px;padding:5px 26px 5px 8px;font-size:11px;}
+    .btn{padding:5px 8px;font-size:10.5px;white-space:nowrap;}
+    .theme-toggle{width:28px;height:28px;}
+    .theme-toggle svg{width:14px;height:14px;}
+    #canvas-wrap{top:44px;}
+    #legend, #stats, #hint{display:none;}
+  }
 </style>
 </head>
 <body>
@@ -639,9 +660,10 @@ gRoot.node().appendChild(gLinks.node());
 gRoot.node().appendChild(gNodes.node());
 
 const zoom = d3.zoom().scaleExtent([0.05, 3]).clickDistance(8).on('zoom', (ev)=>{ gRoot.attr('transform', ev.transform); });
+
 svg.call(zoom);
 
-const dx = 34;   // vertical spacing between siblings
+const dx = 50;   // vertical spacing between siblings
 const dy = 190;  // horizontal spacing between generations
 
 let root = d3.hierarchy(rawData, d=>d.children);
@@ -690,9 +712,18 @@ function update(source){
     })
     .on('mouseleave', ()=>{ document.getElementById('tooltip').style.display='none'; });
 
+  nodeEnter.append('line')
+    .attr('class', 'name-link')
+    .attr('x1', 0).attr('x2', 0)
+    .attr('y1', d => d.depth===0 ? -27 : -19)
+    .attr('y2', d => d.depth===0 ? -9 : -6)
+    .attr('stroke', 'var(--line)')
+    .attr('stroke-width', 1)
+    .style('pointer-events', 'none');
+
   nodeEnter.append('circle')
     .attr('class', 'hit-area')
-    .attr('r', 15)
+    .attr('r', 13)
     .attr('fill', 'transparent')
     .style('cursor', 'pointer')
     .on('click', (event,d)=>{
@@ -712,7 +743,7 @@ function update(source){
   nodeEnter.append('text')
     .attr('dir','rtl')
     .attr('x', 0)
-    .attr('y', d => d.depth===0 ? -20 : -13)
+    .attr('y', d => d.depth===0 ? -30 : -22)
     .attr('text-anchor', 'middle')
     .text(d => d.data.name)
     .on('click', (event,d)=>{
@@ -894,7 +925,7 @@ function breadcrumbOf(d){
   return chain;
 }
 
-document.getElementById('buildStamp').textContent = 'إصدار 2026-07-26 22:50 (رمادي فاتح + نقاط بيج)';
+document.getElementById('buildStamp').textContent = 'إصدار 2026-07-27 01:45 (وضع أفقي مضغوط)';
 let currentDetailId = null;
 // ================= LINEAGE HIGHLIGHT (dim distant branches) =================
 function highlightLineage(selNode){
@@ -1116,7 +1147,7 @@ function exportBranchImage(d){
     c.setAttribute('stroke', '#FFFCF4'); c.setAttribute('stroke-width','2');
     grp.appendChild(c);
     const t = document.createElementNS(ns,'text');
-    t.setAttribute('x', 0); t.setAttribute('y', n.depth===0?-20:-13);
+    t.setAttribute('x', 0); t.setAttribute('y', n.depth===0?-30:-22);
     t.setAttribute('text-anchor','middle');
     t.setAttribute('font-size', n.depth===0?19:13);
     t.setAttribute('fill', n.depth===0? '#B8863B':'#1B3B3A');
