@@ -382,7 +382,15 @@
     .theme-toggle{width:28px;height:28px;}
     .theme-toggle svg{width:14px;height:14px;}
     #canvas-wrap{top:44px;}
-    #legend, #stats, #hint{display:none;}
+    #stats, #hint{display:none;}
+    #legend{
+      display:flex; flex-direction:row; flex-wrap:nowrap; align-items:center;
+      bottom:4px; top:auto; left:50%; right:auto; transform:translateX(-50%);
+      width:auto; max-width:96vw; overflow-x:auto;
+      gap:10px; padding:5px 12px; font-size:10px;
+    }
+    #legend .row{margin:0; flex:0 0 auto; gap:4px;}
+    #legend .dot{width:8px;height:8px;}
   }
 </style>
 </head>
@@ -925,7 +933,7 @@ function breadcrumbOf(d){
   return chain;
 }
 
-document.getElementById('buildStamp').textContent = 'إصدار 2026-07-27 01:45 (وضع أفقي مضغوط)';
+document.getElementById('buildStamp').textContent = 'إصدار 2026-07-27 02:00 (مفتاح الألوان أفقي)';
 let currentDetailId = null;
 // ================= LINEAGE HIGHLIGHT (dim distant branches) =================
 function highlightLineage(selNode){
